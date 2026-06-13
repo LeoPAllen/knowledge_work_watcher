@@ -7,7 +7,9 @@
   "scripts": {
     "backend:start": "node backend/src/server.mjs",
     "check:manifest": "node extension/scripts/check-manifest.mjs",
-    "test": "node --test extension/tests/*.test.mjs backend/tests/*.test.mjs"
+    "etl": "node research-etl/src/cli.mjs",
+    "etl:synthetic": "node research-etl/src/cli.mjs --input research-etl/fixtures/synthetic-events.jsonl --output research-exports/synthetic",
+    "test": "node --test extension/tests/*.test.mjs backend/tests/*.test.mjs research-etl/tests/*.test.mjs"
   },
   "devDependencies": {
     "linkedom": "^0.18.12"

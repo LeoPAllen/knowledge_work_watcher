@@ -1,5 +1,16 @@
 # Project History
 
+## 2026-06-13 - Research ETL exports
+
+- Added dependency-free JSONL and SQLite input for schema version 1 events.
+- Added deterministic activity sessionization with a 30-minute default gap.
+- Produces clean events, page views, search/LLM episodes, exposures, links,
+  and solution-assembly traces as CSV.
+- Added duplicate, timestamp, schema, private-leak, and secret-output checks.
+- Added a reviewed synthetic fixture and deterministic transformation tests.
+- Generated research exports remain ignored; real participant data is banned.
+- Next: validate episode definitions with the research analysis plan.
+
 ## 2026-06-13 - Extension upload sync
 
 - Added opt-in, consented, active-capture batch upload to the MVP backend.

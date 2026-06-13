@@ -6,7 +6,7 @@ Knowledge Work Watcher is an ambient, privacy-preserving research browser
 extension for reconstructing knowledge-work episodes. The Chrome Manifest V3
 client has local navigation, search, LLM, and knowledge-site telemetry. Backend
 ingestion accepts validated events into local SQLite; extension sync is
-consent-gated and ETL is absent.
+consent-gated. Local ETL produces sessionized synthetic CSV exports.
 
 ## File Map
 
@@ -20,6 +20,7 @@ consent-gated and ETL is absent.
 - `docs/research-background.md`: brief source notes
 - `docs/adr/`: architectural decisions
 - `backend/`: authenticated ingestion API, SQLite storage, and tests
+- `research-etl/`: synthetic fixtures, sessionization, CSV exports, and tests
 
 ## Coding Rules
 
@@ -29,6 +30,7 @@ consent-gated and ETL is absent.
 - Treat event-schema changes as API changes; document and test them.
 - Keep ingestion append-only and avoid logging event bodies or auth tokens.
 - Keep upload off by default and preserve events until server acknowledgement.
+- Keep ETL deterministic and fail closed on schema or privacy quality checks.
 - Add focused tests for parsers, redaction, and privacy filters.
 - Use synthetic fixtures only.
 

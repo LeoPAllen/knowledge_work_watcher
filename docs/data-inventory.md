@@ -36,6 +36,10 @@ records must be synthetic or demo data.
 | Rejections | Event ID/type, reason, timestamp | Metadata-only dead letters |
 | Raw ingestion | Validated event JSON | Append-only local SQLite |
 | Server metadata | Receive time and request ID | Operations and tracing |
+| Clean events | Minimized envelope, hashes, categories | Quality-reviewed base table |
+| Episodes | Search/LLM groups and activity sessions | Reconstruct work sequences |
+| Exposures | Page, knowledge, and source metadata | Analyze information exposure |
+| Derived links | Hash-matched downstream visits and traces | Analyze solution assembly |
 
 Raw participant IDs are hashed before storage and are not redisplayed.
 
@@ -62,7 +66,6 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 ## Deferred
 
 - Production upload receipts and operational logs
-- Research ETL outputs and episode-level derived tables
 - `TODO(IRB)`: retention, deletion, participant identifiers, and approved text
   fields
 - `TODO(IRB)`: approve search query and result-title fields before study use
