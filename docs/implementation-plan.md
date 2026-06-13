@@ -44,8 +44,13 @@
 - Preserve failures, dead-letter explicit rejections, and retry with backoff.
 - Require explicit upload enablement and exact runtime server permission.
 
+## 7. Research ETL
+
+- Validate versioned JSONL or SQLite input before transformation.
+- Sessionize by participant/session and bounded inactivity.
+- Export deterministic synthetic CSV tables with privacy quality checks.
+
 ## Deferred
 
 - Production authentication and deployment
-- Research ETL and episode reconstruction
 - Production deployment and participant enrollment

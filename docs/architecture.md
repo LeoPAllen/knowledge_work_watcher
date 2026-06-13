@@ -6,7 +6,8 @@ A minimal extension exists under `extension/`. It includes Manifest V3 controls,
 local persistence, a URL privacy filter, minimized navigation telemetry, and
 scoped search, LLM, and knowledge-site parsers. An MVP Fastify API validates
 events and stores them append-only in local SQLite. The extension does not
-upload unless the participant enables sync; research ETL remains absent.
+upload unless the participant enables sync. Local ETL validates and sessionizes
+synthetic JSONL or SQLite events into analysis-ready CSV tables.
 
 ## Extension Layout
 
@@ -23,6 +24,7 @@ upload unless the participant enables sync; research ETL remains absent.
 - `extension/scripts/`: dependency-free policy checks
 - `backend/src/`: API, auth, validation, configuration, and SQLite storage
 - `backend/tests/`: synthetic endpoint and persistence tests
+- `research-etl/`: validation, sessionization, transforms, fixtures, and tests
 
 ## Planned Components
 
@@ -49,13 +51,16 @@ upload unless the participant enables sync; research ETL remains absent.
    - Adds request ID/receive time and stores immutable raw event JSON in SQLite.
    - Uses a shared study token placeholder; production auth remains deferred.
 6. **Research ETL**
-   - Deferred; will operate on approved, versioned event contracts.
+   - Reads version 1 JSONL or SQLite events and fails closed on quality checks.
+   - Writes deterministic clean, exposure, episode, navigation, and trace CSVs.
 
 ## Event Flow
 
 `signal -> consent/filter -> minimization -> local queue`
 
 `active upload -> bearer auth -> validation -> append-only SQLite`
+
+`JSONL/SQLite -> quality checks -> sessionization -> derived CSV tables`
 
 Upload is off by default and stops while paused or after consent revocation.
 

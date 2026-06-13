@@ -13,9 +13,10 @@ This repository contains a Chrome Manifest V3 extension, a local MVP ingestion
 API, and project documentation. The extension records minimized navigation,
 search, LLM, and knowledge-site events locally after consent. The Fastify API
 validates schema version 1 events and appends them to SQLite. Extension upload,
-is optional, consent-gated, and active-capture-only. LLM response-text capture,
-broad page capture, and research ETL remain absent. Only synthetic or demo data
-may be used during development.
+is optional, consent-gated, and active-capture-only. Local research ETL converts
+synthetic JSONL or SQLite events into sessionized CSV tables. LLM response-text
+capture and broad page capture remain absent. Only synthetic or demo data may
+be used during development.
 
 ## MVP Direction
 
@@ -53,4 +54,6 @@ decision. Real participant data must never be committed.
 See [extension/README.md](extension/README.md) for unpacked-loading and test
 instructions and [backend/README.md](backend/README.md) for API setup. Run
 `npm test` for all tests and `npm run backend:start` for the configured API.
+Run `npm run etl:synthetic` for reviewed synthetic research exports; see
+[research-etl/README.md](research-etl/README.md) for input and session rules.
 See [AGENTS.md](AGENTS.md) for repository rules.
