@@ -4,7 +4,6 @@ Schema version 1 supports local controls and minimized navigation, search, LLM,
 and knowledge-site exposure. Broad page text is not supported.
 
 ## Common Envelope
-
 | Field | Purpose |
 | --- | --- |
 | `event_id` | Random local event identifier |
@@ -23,16 +22,12 @@ arbitrary DOM/page content are not valid schema fields.
 
 ## Version 1 Event Types
 
-- `extension_installed`: installation lifecycle reason
-- `consent_changed`: boolean consent state
-- `capture_paused`: empty payload
-- `capture_resumed`: empty payload
+- `extension_installed`, `consent_changed`: lifecycle/consent state
+- `capture_paused`, `capture_resumed`: empty control payloads
 - `config_changed`: names of changed configuration fields, not values
 - `queue_test_event`: marker requiring `synthetic: true`
-- `tab_created`, `tab_activated`: minimized context for an allowed page
-- `tab_updated`: allowed context plus `loading` or `complete`
-- `navigation_committed`: allowed context plus transition metadata
-- `window_focus_changed`: allowed context plus focused state
+- `tab_created`, `tab_activated`, `tab_updated`: minimized allowed page context
+- `navigation_committed`, `window_focus_changed`: transition/focus metadata
 - `capture_skipped`: signal and policy reason only; no page identity
 - `search_query_observed`: engine, URL hash, and redacted-or-null query
 - `search_results_exposed`: up to 20 minimized result records
@@ -41,9 +36,8 @@ arbitrary DOM/page content are not valid schema fields.
 - `llm_response_observed`: response index/source count; no response text
 - `llm_source_links_exposed`: minimized source hostname/hash records
 - `llm_interaction_metadata`: turn/source counts, tool, model, parser version
-- `knowledge_page_exposed`: site/category, page type, title, and URL hash
-- `qna_question_exposed`: question ID, tags, and score metadata
-- `qna_answer_exposed`: answer ID, accepted marker, and score metadata
+- `knowledge_page_exposed`: category, page type, title, and URL hash
+- `qna_question_exposed`, `qna_answer_exposed`: IDs and status metadata
 - `code_repo_exposed`: validated public repository URL metadata
 - `docs_page_exposed`: page/package title and up to 20 section headings
 - `parser_error`: allowlisted error code and parser metadata only
@@ -71,6 +65,12 @@ DOM are excluded. Titles/headings are prototype-only; `TODO(IRB)` before use.
 - Events are validated before append.
 - The queue uses `chrome.storage.local` and rejects appends after 500 events.
 - No network upload exists.
+
+## Backend Ingestion
+- Single and batch endpoints accept only schema version 1 events.
+- The backend reuses the canonical validator and rejects unknown fields.
+- Accepted rows add server receive time and request ID without changing events.
+- SQLite stores the raw validated event JSON append-only.
 
 ## Versioning
 

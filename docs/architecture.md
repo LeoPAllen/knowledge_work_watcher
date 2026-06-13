@@ -4,7 +4,9 @@
 
 A minimal extension exists under `extension/`. It includes Manifest V3 controls,
 local persistence, a URL privacy filter, minimized navigation telemetry, and
-scoped search, LLM, and knowledge-site parsers. It has no backend or ETL.
+scoped search, LLM, and knowledge-site parsers. An MVP Fastify API validates
+events and stores them append-only in local SQLite. The extension does not
+upload to it yet; research ETL remains absent.
 
 ## Extension Layout
 
@@ -18,6 +20,8 @@ scoped search, LLM, and knowledge-site parsers. It has no backend or ETL.
 - `extension/src/config/`: readable default domain policy
 - `extension/src/shared/`: state, filtering, identifiers, schema, and storage
 - `extension/scripts/`: dependency-free policy checks
+- `backend/src/`: API, auth, validation, configuration, and SQLite storage
+- `backend/tests/`: synthetic endpoint and persistence tests
 
 ## Planned Components
 
@@ -39,15 +43,19 @@ scoped search, LLM, and knowledge-site parsers. It has no backend or ETL.
    - Retention, encryption, and deletion behavior are `TODO` pending study and
      IRB requirements.
 5. **Backend ingestion**
-   - Deferred until after the extension MVP and an explicit security review.
+   - Accepts authenticated schema v1 single or batch event requests.
+   - Adds request ID/receive time and stores immutable raw event JSON in SQLite.
+   - Uses a shared study token placeholder; production auth remains deferred.
 6. **Research ETL**
    - Deferred; will operate on approved, versioned event contracts.
 
 ## Event Flow
 
-`browser/DOM signal -> consent gate -> scoped parser/filter -> minimization -> local queue`
+`signal -> consent/filter -> minimization -> local queue`
 
-Future upload must be separately consented, authenticated, and documented.
+`future upload -> bearer auth -> validation -> append-only SQLite`
+
+Upload must be separately implemented, consented, and reviewed.
 
 ## Boundaries
 

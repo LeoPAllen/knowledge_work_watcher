@@ -1,5 +1,16 @@
 # Project History
 
+## 2026-06-13 - MVP backend ingestion API
+
+- Added Fastify single/batch ingestion, health, and schema-version endpoints.
+- Reuses strict schema version 1 validation before persistence.
+- Requires an environment-provided bearer study token placeholder.
+- Stores accepted event JSON append-only in local SQLite.
+- Adds receive timestamps and request IDs without logging raw payloads.
+- Enforces body/batch limits and reports safe partial batch rejection.
+- Added synthetic API, auth, storage, CORS, size, and logging tests.
+- Next: security review before implementing extension upload.
+
 ## 2026-06-13 - Knowledge-site exposure parsers
 
 - Added scoped Q&A, GitHub, docs, package, and Wikipedia parsers.

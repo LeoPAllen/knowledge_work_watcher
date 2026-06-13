@@ -26,3 +26,6 @@ tmp/
 data/
 participant-data/
 research-exports/
+
+# Local backend storage
+backend/data/

@@ -32,8 +32,14 @@
 - Complete privacy, permissions, and threat-model reviews.
 - Add export/diagnostic tooling that cannot expose sensitive content.
 
+## 5. Local Ingestion
+
+- Validate authenticated schema v1 events at a bounded HTTP interface.
+- Store accepted raw events append-only in local SQLite.
+- Keep extension upload and production deployment deferred.
+
 ## Deferred
 
-- Backend ingestion and authentication
+- Extension upload and production authentication
 - Research ETL and episode reconstruction
 - Production deployment and participant enrollment

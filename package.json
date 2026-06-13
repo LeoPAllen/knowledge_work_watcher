@@ -1,11 +1,19 @@
 {
   "name": "knowledge-work-watcher",
   "private": true,
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
+    "backend:start": "node backend/src/server.mjs",
     "check:manifest": "node extension/scripts/check-manifest.mjs",
-    "test": "node --test extension/tests/*.test.mjs"
+    "test": "node --test extension/tests/*.test.mjs backend/tests/*.test.mjs"
   },
   "devDependencies": {
     "linkedom": "^0.18.12"
+  },
+  "dependencies": {
+    "fastify": "^5.8.5",
+    "zod": "^4.4.3"
   }
 }
