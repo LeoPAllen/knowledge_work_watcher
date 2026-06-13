@@ -7,11 +7,23 @@ export const EVENT_TYPES = Object.freeze([
   "capture_resumed",
   "config_changed",
   "queue_test_event",
+  "tab_created",
+  "tab_activated",
+  "tab_updated",
+  "navigation_committed",
+  "window_focus_changed",
+  "capture_skipped",
 ]);
 
 export const CAPTURE_MODES = Object.freeze(["off", "paused", "ambient"]);
 
-const SOURCES = new Set(["service_worker", "options", "popup", "debug"]);
+const SOURCES = new Set([
+  "service_worker",
+  "options",
+  "popup",
+  "debug",
+  "telemetry",
+]);
 const CONFIG_FIELDS = new Set([
   "participant_id_hash",
   "study_server_url",
@@ -66,6 +78,50 @@ function isIsoTimestamp(value) {
   );
 }
 
+function isSha256(value) {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+
+function isFiniteTimestamp(value) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function isHostname(value) {
+  return (
+    isNonEmptyString(value) &&
+    /^[a-z0-9.-]+$/.test(value) &&
+    !value.startsWith(".") &&
+    !value.endsWith(".")
+  );
+}
+
+function isBrowserPseudonym(value, kind) {
+  return (
+    typeof value === "string" &&
+    new RegExp(`^${kind}_[a-f0-9]{64}$`).test(value)
+  );
+}
+
+const PAGE_CONTEXT_FIELDS = new Set([
+  "url_hash",
+  "hostname",
+  "tab_id",
+  "window_id",
+  "browser_timestamp",
+]);
+
+function validatePageContext(payload, extraFields = new Set()) {
+  const allowedFields = new Set([...PAGE_CONTEXT_FIELDS, ...extraFields]);
+  return (
+    hasOnlyFields(payload, allowedFields) &&
+    isSha256(payload.url_hash) &&
+    isHostname(payload.hostname) &&
+    isBrowserPseudonym(payload.tab_id, "tab") &&
+    isBrowserPseudonym(payload.window_id, "window") &&
+    isFiniteTimestamp(payload.browser_timestamp)
+  );
+}
+
 function validatePayload(eventType, payload) {
   if (!isPlainObject(payload)) {
     return false;
@@ -97,6 +153,45 @@ function validatePayload(eventType, payload) {
       return (
         hasOnlyFields(payload, new Set(["synthetic"])) &&
         payload.synthetic === true
+      );
+    case "tab_created":
+    case "tab_activated":
+      return validatePageContext(payload);
+    case "tab_updated":
+      return (
+        validatePageContext(payload, new Set(["status"])) &&
+        ["loading", "complete"].includes(payload.status)
+      );
+    case "navigation_committed":
+      return (
+        validatePageContext(
+          payload,
+          new Set(["transition_type", "transition_qualifiers"]),
+        ) &&
+        isNonEmptyString(payload.transition_type) &&
+        Array.isArray(payload.transition_qualifiers) &&
+        payload.transition_qualifiers.every(isNonEmptyString)
+      );
+    case "window_focus_changed":
+      return (
+        validatePageContext(payload, new Set(["focused"])) &&
+        typeof payload.focused === "boolean"
+      );
+    case "capture_skipped":
+      return (
+        hasOnlyFields(
+          payload,
+          new Set(["signal_type", "classification", "reason", "category"]),
+        ) &&
+        isNonEmptyString(payload.signal_type) &&
+        [
+          "denied",
+          "private_or_sensitive",
+          "unsupported",
+          "invalid",
+        ].includes(payload.classification) &&
+        isNonEmptyString(payload.reason) &&
+        isNullableString(payload.category)
       );
     default:
       return false;

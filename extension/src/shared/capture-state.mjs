@@ -169,6 +169,17 @@ export function createCaptureStateController({
       return publicState(await readState());
     },
 
+    async getTelemetryContext() {
+      await pendingWrite;
+      const state = await readState();
+      return {
+        capture_status: getCaptureStatus(state),
+        participant_id_hash: state.participant_id_hash,
+        session_id: state.session_id,
+        allowlist: [...state.allowlist],
+      };
+    },
+
     async updateConfig(changes, source = "options") {
       return runExclusive(async () => {
         const changedFields = Object.keys(changes);

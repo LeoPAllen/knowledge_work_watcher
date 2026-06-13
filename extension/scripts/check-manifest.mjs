@@ -28,10 +28,11 @@ if (manifest.background?.type !== "module") {
 const permissions = manifest.permissions ?? [];
 if (
   !Array.isArray(permissions) ||
-  permissions.length !== 1 ||
-  permissions[0] !== "storage"
+  permissions.length !== 2 ||
+  !permissions.includes("storage") ||
+  !permissions.includes("webNavigation")
 ) {
-  errors.push("the only permitted extension permission is storage");
+  errors.push("the only permitted extension permissions are storage and webNavigation");
 }
 
 if ("host_permissions" in manifest || "optional_host_permissions" in manifest) {
@@ -55,6 +56,6 @@ if (errors.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    `Manifest valid: MV3, ${referencedFiles.length} referenced files, storage-only permission.`,
+    `Manifest valid: MV3, ${referencedFiles.length} referenced files, minimal permissions.`,
   );
 }

@@ -1,5 +1,15 @@
 # Project History
 
+## 2026-06-13 - Ambient navigation telemetry
+
+- Added consent-gated top-frame navigation, tab, and window event handling.
+- Added only the `webNavigation` permission; no host access or content scripts.
+- Stores allowed hostname, path-derived URL hash, and session-local browser IDs.
+- Excludes raw URLs, queries, fragments, titles, page text, and form data.
+- Stores denied/private/unknown navigation only as minimized skip metadata.
+- Added schema, gating, leak-prevention, identifier, and manifest tests.
+- Next: manually validate unpacked behavior before any search/LLM adapters.
+
 ## 2026-06-13 - Domain privacy filter
 
 - Added readable default allowlist and sensitive-domain denylist categories.

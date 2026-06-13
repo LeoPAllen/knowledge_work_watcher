@@ -2,9 +2,10 @@
   "manifest_version": 3,
   "name": "Knowledge Work Watcher",
   "version": "0.1.0",
-  "description": "Privacy-preserving research extension shell. Capture is inactive.",
+  "description": "Privacy-preserving research extension with local, consent-gated navigation telemetry.",
   "permissions": [
-    "storage"
+    "storage",
+    "webNavigation"
   ],
   "action": {
     "default_popup": "src/popup/popup.html",

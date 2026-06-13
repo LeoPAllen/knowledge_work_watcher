@@ -3,12 +3,46 @@ import { createLocalQueue } from "../shared/local-queue.mjs";
 import { createChromeStorageAdapter } from "../shared/storage.mjs";
 import { createChromeStateStorage } from "../shared/config-storage.mjs";
 import { createCaptureStateController } from "../shared/capture-state.mjs";
+import { createNavigationTelemetry } from "./navigation-telemetry.mjs";
 
 const queue = createLocalQueue(createChromeStorageAdapter());
+const extensionVersion = chrome.runtime.getManifest().version;
 const controller = createCaptureStateController({
   storage: createChromeStateStorage(),
   queue,
-  extensionVersion: chrome.runtime.getManifest().version,
+  extensionVersion,
+});
+const telemetry = createNavigationTelemetry({
+  stateController: controller,
+  queue,
+  extensionVersion,
+  getWindowId: async (tabId) => (await chrome.tabs.get(tabId)).windowId,
+});
+
+function runTelemetry(handler) {
+  handler().catch(() => {
+    console.error("Knowledge Work Watcher could not process a telemetry signal.");
+  });
+}
+
+chrome.tabs.onCreated.addListener((tab) => {
+  runTelemetry(() => telemetry.onTabCreated(tab));
+});
+
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  runTelemetry(() => telemetry.onTabActivated(activeInfo));
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  runTelemetry(() => telemetry.onTabUpdated(tabId, changeInfo));
+});
+
+chrome.webNavigation.onCommitted.addListener((details) => {
+  runTelemetry(() => telemetry.onNavigationCommitted(details));
+});
+
+chrome.windows.onFocusChanged.addListener((windowId) => {
+  runTelemetry(() => telemetry.onWindowFocusChanged(windowId));
 });
 
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
@@ -16,7 +50,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
     const state = await controller.getState();
     const event = createEvent({
       eventType: "extension_installed",
-      extensionVersion: chrome.runtime.getManifest().version,
+      extensionVersion,
       captureMode:
         state.capture_status === "active" ? "ambient" : state.capture_status,
       source: "service_worker",
@@ -53,5 +87,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 console.info(
-  "Knowledge Work Watcher state controller initialized; browsing capture is absent.",
+  "Knowledge Work Watcher initialized with consent-gated local navigation telemetry.",
 );

@@ -10,6 +10,7 @@
 - Events are minimized before entering a local queue.
 - The local queue is bounded at 500 validated events.
 - Backend upload is not implemented.
+- Navigation capture requires active consent, ambient mode, and an allowed URL.
 
 ## Prohibited Capture
 
@@ -33,7 +34,7 @@ explicitly permits it for named fields and domains.
 
 - The queue uses `chrome.storage.local`; it is local but not application-level
   encrypted and must still be treated as sensitive.
-- The only current automatic event is extension installation metadata.
+- Automatic events include installation metadata and gated navigation signals.
 - Debug events are explicitly synthetic and contain no participant identifier.
 - JSON export creates a user-managed local file outside extension storage.
 - Raw participant IDs must not enter events, logs, or exports.
@@ -42,7 +43,7 @@ explicitly permits it for named fields and domains.
 
 ## URL Policy
 
-- Future URL handling must call the shared privacy filter before capture.
+- Every observed navigation URL must pass the shared privacy filter.
 - Denylisted and sensitive rules override default and custom allowlists.
 - Invalid, unknown, and unsupported URLs fail closed.
 - Local files, browser/extension pages, login/account surfaces, private
@@ -53,13 +54,16 @@ explicitly permits it for named fields and domains.
 - Classification returns policy metadata only and does not log or persist URLs.
 - Custom allowlist domains require review; static sensitive-domain lists cannot
   identify every sensitive service.
+- Allowed records store hostname and a SHA-256 of scheme/host/path only.
+- Denied, private, invalid, and unknown records omit all page identity.
+- Titles are never requested or stored.
 
 ## Consent Status
 
 - Current consent copy is a development placeholder.
 - `TODO(IRB)`: replace it with approved consent language before study use.
 - The interface does not claim IRB approval.
-- An active control state does not currently cause browsing capture.
+- Active ambient state enables only the minimized navigation signals above.
 
 ## Deferred Decisions
 
