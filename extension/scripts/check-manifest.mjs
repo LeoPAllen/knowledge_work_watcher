@@ -21,8 +21,17 @@ if (!manifest.name || !manifest.version) {
   errors.push("name and version are required");
 }
 
-if ("permissions" in manifest) {
-  errors.push("permissions must be omitted for the shell");
+if (manifest.background?.type !== "module") {
+  errors.push("background service worker must use module type");
+}
+
+const permissions = manifest.permissions ?? [];
+if (
+  !Array.isArray(permissions) ||
+  permissions.length !== 1 ||
+  permissions[0] !== "storage"
+) {
+  errors.push("the only permitted extension permission is storage");
 }
 
 if ("host_permissions" in manifest || "optional_host_permissions" in manifest) {
@@ -46,6 +55,6 @@ if (errors.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    `Manifest valid: MV3, ${referencedFiles.length} referenced files, no permissions.`,
+    `Manifest valid: MV3, ${referencedFiles.length} referenced files, storage-only permission.`,
   );
 }

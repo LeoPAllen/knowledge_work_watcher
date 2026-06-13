@@ -41,6 +41,29 @@
       <aside class="notice" aria-label="Current status">
         Ambient capture is off. This extension shell collects no browsing data.
       </aside>
+
+      <section class="debug-panel" aria-labelledby="debug-heading">
+        <p class="eyebrow">Local development only</p>
+        <h2 id="debug-heading">Event queue</h2>
+        <p>
+          Create and inspect synthetic metadata events. No browsing activity,
+          page content, or participant identifier is included.
+        </p>
+        <p class="queue-count" aria-live="polite">
+          Queued events: <strong id="queue-count">Loading...</strong>
+        </p>
+        <div class="debug-actions">
+          <button id="create-test-event" type="button">Create test event</button>
+          <button id="export-events" class="secondary" type="button">
+            Export JSON
+          </button>
+          <button id="clear-events" class="danger" type="button">
+            Clear queue
+          </button>
+        </div>
+        <p id="debug-status" class="debug-status" role="status"></p>
+      </section>
     </main>
+    <script type="module" src="options.mjs"></script>
   </body>
 </html>
