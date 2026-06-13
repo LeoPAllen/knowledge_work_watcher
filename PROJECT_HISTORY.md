@@ -1,5 +1,15 @@
 # Project History
 
+## 2026-06-13 - Domain privacy filter
+
+- Added readable default allowlist and sensitive-domain denylist categories.
+- Added fail-closed URL classification with deny rules taking precedence.
+- Blocks private networks, local files, browser pages, and login/account paths.
+- Supports explicit debug-only local/private network classification.
+- Added tests for all outcomes, lookalikes, custom domains, and precedence.
+- Added no host permissions, browsing listeners, telemetry, or URL persistence.
+- Next: require the classifier in each future site adapter before collection.
+
 ## 2026-06-13 - Consent and ambient controls
 
 - Added persistent participant, server, allowlist, consent, and debug settings.

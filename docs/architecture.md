@@ -3,8 +3,8 @@
 ## Current State
 
 A minimal extension exists under `extension/`. It includes a Manifest V3 state
-controller, popup, options page, and local control/event persistence. It has no
-browsing telemetry, host permissions, content scripts, backend, or ETL.
+controller, popup, options page, local persistence, and a URL privacy filter. It
+has no browsing telemetry, host permissions, content scripts, backend, or ETL.
 
 ## Extension Layout
 
@@ -12,7 +12,8 @@ browsing telemetry, host permissions, content scripts, backend, or ETL.
 - `extension/src/background/`: local state controller service worker
 - `extension/src/popup/`: capture-status popup
 - `extension/src/options/`: local consent, configuration, and debug controls
-- `extension/src/shared/`: state, schema, queue, storage, and shared styles
+- `extension/src/config/`: readable default domain policy
+- `extension/src/shared/`: state, privacy filter, schema, queue, and storage
 - `extension/scripts/`: dependency-free policy checks
 
 ## Planned Components
@@ -26,8 +27,9 @@ browsing telemetry, host permissions, content scripts, backend, or ETL.
      domains.
    - Avoid broad DOM or page capture.
 3. **Privacy filter**
-   - Rejects excluded domains and sensitive fields.
-   - Minimizes and validates events before persistence.
+   - Classifies URLs as allowed, denied, private/sensitive, unsupported, or
+     invalid before any future adapter runs.
+   - Applies deny and sensitive rules before default or custom allowlists.
 4. **Local queue**
    - Stores validated events before any future upload.
    - Retention, encryption, and deletion behavior are `TODO` pending study and

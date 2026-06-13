@@ -40,6 +40,20 @@ explicitly permits it for named fields and domains.
 - Participant IDs are hashed in the options page before storage or messaging.
 - Study server URL and allowlist settings remain local and are not operational.
 
+## URL Policy
+
+- Future URL handling must call the shared privacy filter before capture.
+- Denylisted and sensitive rules override default and custom allowlists.
+- Invalid, unknown, and unsupported URLs fail closed.
+- Local files, browser/extension pages, login/account surfaces, private
+  networks, webmail, private documents, finance, health, and adult domains are
+  blocked.
+- Local/private network URLs require both debug mode and an explicit debug
+  override; sensitive paths remain blocked.
+- Classification returns policy metadata only and does not log or persist URLs.
+- Custom allowlist domains require review; static sensitive-domain lists cannot
+  identify every sensitive service.
+
 ## Consent Status
 
 - Current consent copy is a development placeholder.
@@ -54,3 +68,4 @@ explicitly permits it for named fields and domains.
 - `TODO(IRB)`: whether any text-bearing fields may be collected.
 - `TODO(Security)`: local encryption and key-management design.
 - `TODO(Security)`: backend authentication, transport, and access controls.
+- `TODO(Security)`: DNS rebinding/resolution safeguards before any host access.
