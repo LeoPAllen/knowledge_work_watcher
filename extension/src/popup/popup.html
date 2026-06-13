@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Knowledge Work Watcher</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="panel">
+      <header>
+        <p class="eyebrow">Research extension</p>
+        <h1>Knowledge Work Watcher</h1>
+      </header>
+
+      <dl class="status-list" aria-label="Extension status">
+        <div class="status-row">
+          <dt>Consent status</dt>
+          <dd><span class="status-dot" aria-hidden="true"></span>Inactive / not configured</dd>
+        </div>
+        <div class="status-row">
+          <dt>Ambient capture</dt>
+          <dd><span class="status-dot" aria-hidden="true"></span>Off</dd>
+        </div>
+      </dl>
+
+      <p class="notice">This shell does not collect or transmit browsing data.</p>
+      <button id="open-options" type="button">Open options</button>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

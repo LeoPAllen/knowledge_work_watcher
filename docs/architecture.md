@@ -2,7 +2,18 @@
 
 ## Current State
 
-Documentation only. No application code, telemetry, backend, or ETL exists.
+A minimal extension shell exists under `extension/`. It includes a Manifest V3
+service worker, popup, and options page, but no telemetry, persistence,
+permissions, content scripts, backend, or ETL.
+
+## Extension Layout
+
+- `extension/manifest.json`: zero-permission MV3 declaration
+- `extension/src/background/`: inert service worker
+- `extension/src/popup/`: capture-status popup
+- `extension/src/options/`: disabled configuration placeholders
+- `extension/src/shared/`: shared presentation styles
+- `extension/scripts/`: dependency-free policy checks
 
 ## Planned Components
 
