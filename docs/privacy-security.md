@@ -24,18 +24,15 @@ domains. LLM response text and all other page text remain prohibited.
 - Request the narrowest Chrome permissions and host patterns possible.
 - Validate event shape and domain eligibility at collection and persistence.
 - Prevent sensitive values from entering logs or error reports.
-- Use synthetic/demo data for development and tests.
 - Review changes to permissions, collection, retention, and transport manually.
 
 ## Local Storage and Export
 - The queue uses `chrome.storage.local`; it is local but not application-level
   encrypted and must still be treated as sensitive.
-- Automatic events include installation metadata and gated navigation signals.
 - Debug events are explicitly synthetic and contain no participant identifier.
 - JSON export creates a user-managed local file outside extension storage.
 - Raw participant IDs must not enter events, logs, or exports.
 - Participant IDs are hashed in the options page before storage or messaging.
-- Study server URL and allowlist settings remain local and are not operational.
 
 ## URL Policy
 - Every observed navigation URL must pass the shared privacy filter.
@@ -45,9 +42,8 @@ domains. LLM response text and all other page text remain prohibited.
   private documents, finance, health, and adult domains are blocked.
 - Local/private network URLs require both debug mode and an explicit debug
   override; sensitive paths remain blocked.
-- Classification returns policy metadata only and does not log or persist URLs.
-- Custom allowlist domains require review; static sensitive-domain lists cannot
-  identify every sensitive service.
+- Custom allowlist domains require review because static sensitive-domain
+  lists cannot identify every sensitive service.
 - Allowed records store hostname and a SHA-256 of scheme/host/path only.
 - Denied, private, invalid, and unknown records omit all page identity.
 - Navigation titles are never requested or stored.
@@ -56,25 +52,29 @@ domains. LLM response text and all other page text remain prohibited.
 - Queries containing email, phone, or obvious secret patterns are stored as
   null with a redaction category.
 - Search destinations are reduced to hostname and URL hash after filtering.
-- Current parsers omit recognized ads rather than storing them.
 - LLM scripts are limited to ChatGPT, Claude, Gemini, Perplexity, and Copilot.
 - Prompt parsing uses named text descendants, not inputs or whole containers.
 - Prompts and model labels use email, phone, and secret redaction.
 - Assistant containers expose link URLs only; response text is never read.
 - Upload, attachment, download, profile, and account elements are excluded.
 - LLM sources store only filtered destination hostname/hash.
+- Knowledge parsers store URL-derived IDs and selected titles/headings only;
+  Q&A bodies, code, README/article text, and comments are never read.
+- GitHub requires a valid repository route and public marker; private,
+  ambiguous, profile, settings, and unsupported routes skip.
+- Deny/private URL rules run again in the background before queueing.
 
 ## Consent Status
 - Current consent copy is a development placeholder.
 - `TODO(IRB)`: replace it with approved consent language before study use.
 - The interface does not claim IRB approval.
-- Active ambient state enables only the minimized navigation signals above.
 
 ## Deferred Decisions
 - `TODO(IRB)`: participant consent language and withdrawal procedure.
 - `TODO(IRB)`: approved retention and deletion periods.
 - `TODO(IRB)`: approve search query and result-title collection for study use.
 - `TODO(IRB)`: approve LLM prompt collection for study use.
+- `TODO(IRB)`: approve knowledge-page titles/headings for study use.
 - `TODO(Security)`: local encryption and key-management design.
 - `TODO(Security)`: backend authentication, transport, and access controls.
 - `TODO(Security)`: DNS rebinding/resolution safeguards before any host access.

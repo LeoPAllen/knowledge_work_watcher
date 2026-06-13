@@ -20,6 +20,11 @@ export const EVENT_TYPES = Object.freeze([
   "llm_response_observed",
   "llm_source_links_exposed",
   "llm_interaction_metadata",
+  "knowledge_page_exposed",
+  "qna_question_exposed",
+  "qna_answer_exposed",
+  "code_repo_exposed",
+  "docs_page_exposed",
   "parser_error",
 ]);
 
@@ -33,6 +38,7 @@ const SOURCES = new Set([
   "telemetry",
   "search_parser",
   "llm_parser",
+  "knowledge_parser",
 ]);
 const CONFIG_FIELDS = new Set([
   "participant_id_hash",
@@ -122,6 +128,29 @@ const LLM_TOOLS = new Set([
 ]);
 const RESULT_TYPES = new Set(["organic", "ad", "ai", "other", "unknown"]);
 const REDACTION_REASONS = new Set(["email", "phone", "secret", "missing"]);
+const KNOWLEDGE_CATEGORIES = new Set([
+  "qna",
+  "code_repo",
+  "package_docs",
+  "documentation",
+  "reference",
+]);
+const KNOWLEDGE_PAGE_TYPES = new Set([
+  "question",
+  "repository",
+  "file",
+  "directory",
+  "issue",
+  "pull_request",
+  "package",
+  "documentation",
+  "article",
+]);
+const REFERRER_CATEGORIES = new Set([
+  "none",
+  "external",
+  ...KNOWLEDGE_CATEGORIES,
+]);
 
 const PAGE_CONTEXT_FIELDS = new Set([
   "url_hash",
@@ -148,6 +177,20 @@ const LLM_CONTEXT_FIELDS = new Set([
   "browser_timestamp",
   "llm_tool",
   "model_name",
+]);
+
+const KNOWLEDGE_CONTEXT_FIELDS = new Set([
+  "page_url_hash",
+  "knowledge_hostname",
+  "tab_id",
+  "window_id",
+  "browser_timestamp",
+  "site",
+  "category",
+  "page_type",
+  "title",
+  "referrer_category",
+  "parser_version",
 ]);
 
 function validatePageContext(payload, extraFields = new Set()) {
@@ -227,6 +270,30 @@ function validateSource(source) {
   );
 }
 
+function validateKnowledgeContext(payload, extraFields = new Set()) {
+  const allowedFields = new Set([...KNOWLEDGE_CONTEXT_FIELDS, ...extraFields]);
+  return (
+    hasOnlyFields(payload, allowedFields) &&
+    isSha256(payload.page_url_hash) &&
+    isHostname(payload.knowledge_hostname) &&
+    isBrowserPseudonym(payload.tab_id, "tab") &&
+    isBrowserPseudonym(payload.window_id, "window") &&
+    isFiniteTimestamp(payload.browser_timestamp) &&
+    isNonEmptyString(payload.site) &&
+    payload.site.length <= 253 &&
+    KNOWLEDGE_CATEGORIES.has(payload.category) &&
+    KNOWLEDGE_PAGE_TYPES.has(payload.page_type) &&
+    (payload.title === null ||
+      (isNonEmptyString(payload.title) && payload.title.length <= 300)) &&
+    REFERRER_CATEGORIES.has(payload.referrer_category) &&
+    payload.parser_version === 1
+  );
+}
+
+function isNullableInteger(value) {
+  return value === null || Number.isInteger(value);
+}
+
 function validateParserError(payload) {
   if (payload.parser_kind === "search") {
     return (
@@ -264,6 +331,39 @@ function validateParserError(payload) {
       [
         "unsupported_llm_page",
         "conversation_root_missing",
+        "parse_failed",
+      ].includes(payload.error_code) &&
+      payload.parser_version === 1
+    );
+  }
+  if (payload.parser_kind === "knowledge") {
+    return (
+      hasOnlyFields(
+        payload,
+        new Set([
+          "page_url_hash",
+          "knowledge_hostname",
+          "tab_id",
+          "window_id",
+          "browser_timestamp",
+          "parser_kind",
+          "site",
+          "category",
+          "parser_stage",
+          "error_code",
+          "parser_version",
+        ]),
+      ) &&
+      isSha256(payload.page_url_hash) &&
+      isHostname(payload.knowledge_hostname) &&
+      isBrowserPseudonym(payload.tab_id, "tab") &&
+      isBrowserPseudonym(payload.window_id, "window") &&
+      isFiniteTimestamp(payload.browser_timestamp) &&
+      isNonEmptyString(payload.site) &&
+      KNOWLEDGE_CATEGORIES.has(payload.category) &&
+      payload.parser_stage === "parse" &&
+      [
+        "knowledge_root_missing",
         "parse_failed",
       ].includes(payload.error_code) &&
       payload.parser_version === 1
@@ -461,6 +561,86 @@ function validatePayload(eventType, payload) {
           (field) => Number.isInteger(payload[field]) && payload[field] >= 0,
         ) &&
         payload.parser_version === 1
+      );
+    case "knowledge_page_exposed":
+      return validateKnowledgeContext(payload);
+    case "qna_question_exposed":
+      return (
+        validateKnowledgeContext(
+          payload,
+          new Set(["question_id", "tags", "score"]),
+        ) &&
+        payload.category === "qna" &&
+        payload.page_type === "question" &&
+        typeof payload.question_id === "string" &&
+        /^\d+$/.test(payload.question_id) &&
+        Array.isArray(payload.tags) &&
+        payload.tags.length <= 10 &&
+        payload.tags.every(
+          (tag) => isNonEmptyString(tag) && tag.length <= 50,
+        ) &&
+        isNullableInteger(payload.score)
+      );
+    case "qna_answer_exposed":
+      return (
+        validateKnowledgeContext(
+          payload,
+          new Set([
+            "question_id",
+            "answer_id",
+            "accepted",
+            "score",
+          ]),
+        ) &&
+        payload.category === "qna" &&
+        payload.page_type === "question" &&
+        typeof payload.question_id === "string" &&
+        /^\d+$/.test(payload.question_id) &&
+        typeof payload.answer_id === "string" &&
+        /^\d+$/.test(payload.answer_id) &&
+        typeof payload.accepted === "boolean" &&
+        isNullableInteger(payload.score)
+      );
+    case "code_repo_exposed":
+      return (
+        validateKnowledgeContext(
+          payload,
+          new Set([
+            "owner",
+            "repository",
+            "file_path",
+            "issue_number",
+            "pull_request_number",
+            "visibility",
+          ]),
+        ) &&
+        payload.category === "code_repo" &&
+        /^[A-Za-z0-9_.-]+$/.test(payload.owner) &&
+        /^[A-Za-z0-9_.-]+$/.test(payload.repository) &&
+        (payload.file_path === null ||
+          (isNonEmptyString(payload.file_path) &&
+            payload.file_path.length <= 500)) &&
+        isNullableInteger(payload.issue_number) &&
+        isNullableInteger(payload.pull_request_number) &&
+        payload.visibility === "public"
+      );
+    case "docs_page_exposed":
+      return (
+        validateKnowledgeContext(
+          payload,
+          new Set(["headings", "package_name"]),
+        ) &&
+        ["package_docs", "documentation", "reference"].includes(
+          payload.category,
+        ) &&
+        Array.isArray(payload.headings) &&
+        payload.headings.length <= 20 &&
+        payload.headings.every(
+          (heading) => isNonEmptyString(heading) && heading.length <= 200,
+        ) &&
+        (payload.package_name === null ||
+          (isNonEmptyString(payload.package_name) &&
+            payload.package_name.length <= 214))
       );
     case "parser_error":
       return validateParserError(payload);

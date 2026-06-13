@@ -27,6 +27,9 @@ LLM pages may queue redacted prompts, response metadata, model labels, and
 source hostname/hashes. Response text and attachments are excluded. Nothing is
 transmitted.
 
+Knowledge-site parsers add titles/headings and structured Q&A, public GitHub,
+package, documentation, and Wikipedia metadata. Full page bodies are excluded.
+
 ## Manual Privacy Check
 
 1. Load the unpacked extension and open its options page.

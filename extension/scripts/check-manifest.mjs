@@ -46,20 +46,38 @@ const expectedHosts = [
   "https://perplexity.ai/*",
   "https://www.perplexity.ai/*",
   "https://copilot.microsoft.com/*",
+  "https://stackoverflow.com/*",
+  "https://*.stackexchange.com/*",
+  "https://serverfault.com/*",
+  "https://superuser.com/*",
+  "https://askubuntu.com/*",
+  "https://mathoverflow.net/*",
+  "https://stackapps.com/*",
+  "https://github.com/*",
+  "https://developer.mozilla.org/*",
+  "https://www.npmjs.com/*",
+  "https://pypi.org/*",
+  "https://*.wikipedia.org/*",
+  "https://docs.github.com/*",
+  "https://docs.gitlab.com/*",
+  "https://docs.python.org/*",
+  "https://learn.microsoft.com/*",
+  "https://developers.google.com/*",
 ];
 if (
   JSON.stringify(manifest.host_permissions) !== JSON.stringify(expectedHosts)
 ) {
-  errors.push("host permissions must match the three approved search hosts");
+  errors.push("host permissions must exactly match approved parser hosts");
 }
 
 if ("optional_host_permissions" in manifest) {
   errors.push("optional host permissions must be omitted");
 }
 
-const [searchScript, llmScript] = manifest.content_scripts ?? [];
+const [searchScript, llmScript, knowledgeScript] =
+  manifest.content_scripts ?? [];
 if (
-  manifest.content_scripts?.length !== 2 ||
+  manifest.content_scripts?.length !== 3 ||
   JSON.stringify(searchScript.matches) !==
     JSON.stringify([
       "https://www.google.com/search*",
@@ -93,6 +111,18 @@ if (
   llmScript?.all_frames !== false
 ) {
   errors.push("LLM content scripts must remain scoped to approved top-frame hosts");
+}
+
+const expectedKnowledgeHosts = expectedHosts.slice(9);
+if (
+  JSON.stringify(knowledgeScript?.matches) !==
+    JSON.stringify(expectedKnowledgeHosts) ||
+  knowledgeScript?.run_at !== "document_idle" ||
+  knowledgeScript?.all_frames !== false
+) {
+  errors.push(
+    "knowledge content scripts must remain scoped to approved top-frame hosts",
+  );
 }
 
 for (const file of referencedFiles) {
