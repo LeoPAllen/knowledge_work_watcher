@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Knowledge Work Watcher",
   "version": "0.1.0",
-  "description": "Privacy-preserving research extension with local, consent-gated navigation and search telemetry.",
+  "description": "Privacy-preserving research extension with local, consent-gated navigation, search, and LLM telemetry.",
   "permissions": [
     "storage",
     "webNavigation"
@@ -10,7 +10,13 @@
   "host_permissions": [
     "https://www.google.com/*",
     "https://www.bing.com/*",
-    "https://duckduckgo.com/*"
+    "https://duckduckgo.com/*",
+    "https://chatgpt.com/*",
+    "https://claude.ai/*",
+    "https://gemini.google.com/*",
+    "https://perplexity.ai/*",
+    "https://www.perplexity.ai/*",
+    "https://copilot.microsoft.com/*"
   ],
   "content_scripts": [
     {
@@ -28,6 +34,22 @@
       "js": [
         "src/search/search-parser.js",
         "src/search/search-content-script.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://perplexity.ai/*",
+        "https://www.perplexity.ai/*",
+        "https://copilot.microsoft.com/*"
+      ],
+      "js": [
+        "src/llm/llm-parser.js",
+        "src/llm/llm-content-script.js"
       ],
       "run_at": "document_idle",
       "all_frames": false

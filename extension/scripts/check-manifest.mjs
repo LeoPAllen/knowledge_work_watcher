@@ -40,6 +40,12 @@ const expectedHosts = [
   "https://www.google.com/*",
   "https://www.bing.com/*",
   "https://duckduckgo.com/*",
+  "https://chatgpt.com/*",
+  "https://claude.ai/*",
+  "https://gemini.google.com/*",
+  "https://perplexity.ai/*",
+  "https://www.perplexity.ai/*",
+  "https://copilot.microsoft.com/*",
 ];
 if (
   JSON.stringify(manifest.host_permissions) !== JSON.stringify(expectedHosts)
@@ -51,9 +57,9 @@ if ("optional_host_permissions" in manifest) {
   errors.push("optional host permissions must be omitted");
 }
 
-const [searchScript] = manifest.content_scripts ?? [];
+const [searchScript, llmScript] = manifest.content_scripts ?? [];
 if (
-  manifest.content_scripts?.length !== 1 ||
+  manifest.content_scripts?.length !== 2 ||
   JSON.stringify(searchScript.matches) !==
     JSON.stringify([
       "https://www.google.com/search*",
@@ -71,6 +77,22 @@ if (
   searchScript.all_frames !== false
 ) {
   errors.push("content scripts must remain scoped to approved top-frame search pages");
+}
+
+if (
+  JSON.stringify(llmScript?.matches) !==
+    JSON.stringify([
+      "https://chatgpt.com/*",
+      "https://claude.ai/*",
+      "https://gemini.google.com/*",
+      "https://perplexity.ai/*",
+      "https://www.perplexity.ai/*",
+      "https://copilot.microsoft.com/*",
+    ]) ||
+  llmScript?.run_at !== "document_idle" ||
+  llmScript?.all_frames !== false
+) {
+  errors.push("LLM content scripts must remain scoped to approved top-frame hosts");
 }
 
 for (const file of referencedFiles) {

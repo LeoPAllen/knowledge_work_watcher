@@ -5,6 +5,7 @@ import { createChromeStateStorage } from "../shared/config-storage.mjs";
 import { createCaptureStateController } from "../shared/capture-state.mjs";
 import { createNavigationTelemetry } from "./navigation-telemetry.mjs";
 import { createSearchTelemetry } from "./search-telemetry.mjs";
+import { createLlmTelemetry } from "./llm-telemetry.mjs";
 
 const queue = createLocalQueue(createChromeStorageAdapter());
 const extensionVersion = chrome.runtime.getManifest().version;
@@ -20,6 +21,11 @@ const telemetry = createNavigationTelemetry({
   getWindowId: async (tabId) => (await chrome.tabs.get(tabId)).windowId,
 });
 const searchTelemetry = createSearchTelemetry({
+  stateController: controller,
+  queue,
+  extensionVersion,
+});
+const llmTelemetry = createLlmTelemetry({
   stateController: controller,
   queue,
   extensionVersion,
@@ -85,6 +91,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     },
     search_parser_error: async () => {
       await searchTelemetry.onParserError(message, sender);
+      return {};
+    },
+    llm_page_parsed: async () => {
+      await llmTelemetry.onPageParsed(message.parsed, sender);
+      return {};
+    },
+    llm_parser_error: async () => {
+      await llmTelemetry.onParserError(message, sender);
       return {};
     },
   };

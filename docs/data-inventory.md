@@ -22,6 +22,10 @@ telemetry. All development records must be synthetic or demo data.
 | Search exposure | Rank, title, destination hostname/hash, type | Up to 20 recognized organic results |
 | Search click | Rank and destination hostname/hash | Recognized result anchors only |
 | Parser error | Engine, code, version, page hash | No exception or DOM text |
+| LLM prompt | Redacted prompt or null, turn, tool/model | Named prompt nodes only |
+| LLM response | Turn and source count | Response text always excluded |
+| LLM sources | Destination hostname/hash | Assistant links, max 20 |
+| LLM interaction | Counts, parser version, conversation ID | Metadata only |
 | Queue | Validated control/telemetry events | Local export and clearing |
 
 Raw participant IDs are hashed before storage and are not redisplayed.
@@ -30,8 +34,6 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 
 | Category | Future intent | Minimization |
 | --- | --- | --- |
-| LLM | Prompt/response metadata | Metadata by default; text capture is not approved |
-| LLM sources | Exposed source links when available | Normalize links; exclude unrelated page content |
 | Downstream use | Navigation after search/LLM exposure | Link through local event IDs |
 | Control | Consent and pause/resume transitions | No unnecessary user attributes |
 
@@ -44,6 +46,7 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 - Network transmission or backend records
 - Raw URLs, query strings, fragments, credentials, and navigation titles
 - Search snippets, ads, arbitrary page text, and raw DOM
+- LLM response text, profile fields, uploads, attachments, and prompt inputs
 
 ## Deferred
 
@@ -52,3 +55,4 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 - `TODO(IRB)`: retention, deletion, participant identifiers, and approved text
   fields
 - `TODO(IRB)`: approve search query and result-title fields before study use
+- `TODO(IRB)`: approve LLM prompt text before study use

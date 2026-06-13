@@ -1,5 +1,15 @@
 # Project History
 
+## 2026-06-13 - LLM interaction parsers
+
+- Added scoped parsers for ChatGPT, Claude, Gemini, Perplexity, and Copilot.
+- Captures redacted prompts, turn metadata, model labels, and source links.
+- Response text, inputs, uploads, attachments, profiles, and raw DOM are absent.
+- Sources store filtered destination hostname/hash only.
+- Added session-local conversation IDs and duplicate snapshot suppression.
+- Added exact host permissions and synthetic fixtures for all five tools.
+- Next: validate selectors manually before expanding LLM metadata.
+
 ## 2026-06-13 - Search exposure parsers
 
 - Added scoped parsers for Google, Bing, and DuckDuckGo result pages.

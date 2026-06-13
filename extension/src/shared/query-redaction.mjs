@@ -3,7 +3,7 @@ const PHONE = /(?:\+?\d[\s().-]*){7,}/;
 const SECRET =
   /\b(?:api[_-]?key|password|passwd|secret|token)\s*[:=]\s*\S+|\bsk-[a-z0-9_-]{12,}|-----BEGIN [A-Z ]*PRIVATE KEY-----/i;
 
-export function redactSearchQuery(value) {
+export function redactText(value) {
   if (typeof value !== "string") {
     return { query: null, redacted: false, reason: "missing" };
   }
@@ -22,3 +22,5 @@ export function redactSearchQuery(value) {
   }
   return { query, redacted: false, reason: null };
 }
+
+export const redactSearchQuery = redactText;
