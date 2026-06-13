@@ -46,6 +46,14 @@ header {
   width: 8px;
 }
 
+.status-dot[data-state="active"] {
+  background: #2f7d4a;
+}
+
+.status-dot[data-state="paused"] {
+  background: #b06d17;
+}
+
 .notice {
   color: var(--muted);
   font-size: 13px;
@@ -55,4 +63,15 @@ header {
 
 button {
   width: 100%;
+}
+
+button + button {
+  margin-top: 10px;
+}
+
+.feedback {
+  color: var(--muted);
+  font-size: 12px;
+  min-height: 18px;
+  margin: 10px 0 0;
 }

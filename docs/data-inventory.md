@@ -1,9 +1,25 @@
 # Data Inventory
 
-This inventory describes proposed MVP categories, not implemented collection.
-All development records must be synthetic or demo data.
+This inventory separates implemented local control data from deferred browsing
+telemetry. All development records must be synthetic or demo data.
 
-| Category | MVP intent | Minimization |
+## Implemented Local Data
+
+| Category | Stored value | Use |
+| --- | --- | --- |
+| Participant | SHA-256 hash or null | Future pseudonymous event linkage |
+| Study server | URL string | Placeholder only; no requests are made |
+| Consent | Accepted/not accepted | Gates ambient control state |
+| Capture | Enabled, paused, session ID | Visible local control state |
+| Allowlist | Domain strings | Placeholder; no adapters use it yet |
+| Debug | Local-only flag | Gates synthetic test event creation |
+| Queue | Validated control/test events | Local export and clearing |
+
+Raw participant IDs are hashed before storage and are not redisplayed.
+
+## Deferred Telemetry
+
+| Category | Future intent | Minimization |
 | --- | --- | --- |
 | Navigation | Allowlisted URL transitions | Prefer origin/path; exclude secrets and sensitive query parameters |
 | Focus | Tab/window focus and duration signals | Stable local IDs; no titles unless later approved |
@@ -19,6 +35,7 @@ All development records must be synthetic or demo data.
 - Broad DOM or page-text capture
 - Private, intranet, localhost, file, and non-allowlisted domains
 - Real participant records in the repository
+- Network transmission or backend records
 
 ## Deferred
 

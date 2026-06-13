@@ -40,6 +40,17 @@ test("creates each supported event type", () => {
   }
 });
 
+test("accepts popup as a state-control event source", () => {
+  const event = createEvent({
+    ...baseInput,
+    source: "popup",
+    eventType: "capture_paused",
+    captureMode: "paused",
+  });
+
+  assert.equal(validateEvent(event).valid, true);
+});
+
 test("rejects unsupported or malformed event data", () => {
   assert.throws(
     () =>

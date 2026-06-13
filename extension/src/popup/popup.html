@@ -17,17 +17,28 @@
       <dl class="status-list" aria-label="Extension status">
         <div class="status-row">
           <dt>Consent status</dt>
-          <dd><span class="status-dot" aria-hidden="true"></span>Inactive / not configured</dd>
+          <dd>
+            <span id="consent-dot" class="status-dot" aria-hidden="true"></span>
+            <span id="consent-status">Loading...</span>
+          </dd>
         </div>
         <div class="status-row">
           <dt>Ambient capture</dt>
-          <dd><span class="status-dot" aria-hidden="true"></span>Off</dd>
+          <dd>
+            <span id="capture-dot" class="status-dot" aria-hidden="true"></span>
+            <span id="capture-status">Loading...</span>
+          </dd>
         </div>
       </dl>
 
-      <p class="notice">This shell does not collect or transmit browsing data.</p>
+      <p class="notice">
+        Controls are active, but browsing capture and server upload are not
+        implemented.
+      </p>
+      <button id="capture-action" type="button" hidden></button>
       <button id="open-options" type="button">Open options</button>
+      <p id="popup-status" class="feedback" role="status"></p>
     </main>
-    <script src="popup.js"></script>
+    <script type="module" src="popup.mjs"></script>
   </body>
 </html>

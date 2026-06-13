@@ -10,50 +10,104 @@
   <body>
     <main class="options">
       <header>
-        <p class="eyebrow">Configuration preview</p>
+        <p class="eyebrow">Local study controls</p>
         <h1>Knowledge Work Watcher</h1>
         <p class="intro">
-          These fields are placeholders. Configuration and consent are not yet
-          implemented, saved, or transmitted.
+          Configuration stays in extension storage. No browsing data is
+          captured and nothing is transmitted to the study server.
         </p>
       </header>
 
-      <form>
-        <fieldset disabled>
+      <form id="configuration-form">
+        <fieldset>
           <legend>Study configuration</legend>
 
           <label for="participant-id">Participant ID</label>
-          <input id="participant-id" type="text" placeholder="Not configured">
+          <input
+            id="participant-id"
+            type="password"
+            autocomplete="off"
+            placeholder="Enter to configure or replace"
+          >
+          <div class="field-meta">
+            <p id="participant-status" class="field-note">Not configured</p>
+            <button
+              id="clear-participant"
+              class="text-button"
+              type="button"
+              disabled
+            >
+              Clear participant ID
+            </button>
+          </div>
 
           <label for="server-url">Study server URL</label>
           <input id="server-url" type="url" placeholder="Not configured">
 
-          <label for="allowlist">Allowlist preview</label>
-          <textarea id="allowlist" rows="4" placeholder="No domains configured"></textarea>
+          <label for="allowlist">Allowlist configuration placeholder</label>
+          <textarea
+            id="allowlist"
+            rows="4"
+            placeholder="One future allowed domain per line"
+          ></textarea>
 
-          <label class="checkbox-row" for="consent">
-            <input id="consent" type="checkbox">
-            I consent to the approved study data collection
+          <label class="checkbox-row" for="debug-mode">
+            <input id="debug-mode" type="checkbox">
+            Enable local-only debug mode
           </label>
+
+          <button type="submit">Save local configuration</button>
         </fieldset>
       </form>
 
-      <aside class="notice" aria-label="Current status">
-        Ambient capture is off. This extension shell collects no browsing data.
-      </aside>
+      <section class="consent-panel" aria-labelledby="consent-heading">
+        <p class="eyebrow">Placeholder consent</p>
+        <h2 id="consent-heading">Research consent</h2>
+        <p>
+          TODO(IRB): replace with approved consent language. This development
+          placeholder does not claim IRB approval.
+        </p>
+        <p>
+          Consent status: <strong id="consent-status">Loading...</strong>
+        </p>
+        <div class="control-actions">
+          <button id="accept-consent" type="button">Accept placeholder consent</button>
+          <button id="revoke-consent" class="danger" type="button" disabled>
+            Revoke consent locally
+          </button>
+        </div>
+      </section>
+
+      <section class="capture-panel" aria-labelledby="capture-heading">
+        <p class="eyebrow">Ambient mode</p>
+        <h2 id="capture-heading">Capture controls</h2>
+        <p>
+          Control state only. Browsing telemetry and content scripts do not
+          exist.
+        </p>
+        <p>Capture status: <strong id="capture-status">Loading...</strong></p>
+        <label class="checkbox-row" for="ambient-enabled">
+          <input id="ambient-enabled" type="checkbox" disabled>
+          Enable ambient capture state
+        </label>
+        <button id="pause-resume" class="secondary" type="button" hidden></button>
+      </section>
 
       <section class="debug-panel" aria-labelledby="debug-heading">
         <p class="eyebrow">Local development only</p>
         <h2 id="debug-heading">Event queue</h2>
         <p>
           Create and inspect synthetic metadata events. No browsing activity,
-          page content, or participant identifier is included.
+          page content, or participant identifier is included. Synthetic event
+          creation requires local-only debug mode.
         </p>
         <p class="queue-count" aria-live="polite">
           Queued events: <strong id="queue-count">Loading...</strong>
         </p>
         <div class="debug-actions">
-          <button id="create-test-event" type="button">Create test event</button>
+          <button id="create-test-event" type="button" disabled>
+            Create test event
+          </button>
           <button id="export-events" class="secondary" type="button">
             Export JSON
           </button>
@@ -63,6 +117,7 @@
         </div>
         <p id="debug-status" class="debug-status" role="status"></p>
       </section>
+      <p id="options-status" class="page-status" role="status"></p>
     </main>
     <script type="module" src="options.mjs"></script>
   </body>

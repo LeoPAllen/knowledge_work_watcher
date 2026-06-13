@@ -11,12 +11,12 @@ export const EVENT_TYPES = Object.freeze([
 
 export const CAPTURE_MODES = Object.freeze(["off", "paused", "ambient"]);
 
-const SOURCES = new Set(["service_worker", "options", "debug"]);
+const SOURCES = new Set(["service_worker", "options", "popup", "debug"]);
 const CONFIG_FIELDS = new Set([
   "participant_id_hash",
   "study_server_url",
   "allowlist",
-  "consent",
+  "debug_mode",
 ]);
 const EVENT_TYPE_SET = new Set(EVENT_TYPES);
 const CAPTURE_MODE_SET = new Set(CAPTURE_MODES);

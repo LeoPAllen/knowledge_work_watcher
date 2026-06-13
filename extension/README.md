@@ -13,8 +13,12 @@ metadata and synthetic test events.
 4. Choose this repository's `extension/` directory.
 5. Open the toolbar popup and the options page.
 
-The popup must show inactive consent and capture. Study options remain disabled.
-The developer section can create, count, export, and clear synthetic events.
+The popup shows active, paused, or off control state. Options manage local
+configuration, placeholder consent, ambient state, and pause/resume. The debug
+section can create synthetic events only when local debug mode is enabled, and
+can always count, export, or clear the queue.
+
+These controls do not capture browsing activity or transmit data.
 
 ## Checks
 
