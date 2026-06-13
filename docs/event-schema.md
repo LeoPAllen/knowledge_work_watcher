@@ -1,7 +1,7 @@
 # Event Schema
 
-Schema version 1 supports extension-state metadata and synthetic queue testing.
-It does not support URL, page, tab, search, LLM, or other browsing telemetry.
+Schema version 1 supports local control events and minimized ambient navigation
+telemetry. It does not support page text, search queries, or LLM content.
 
 ## Common Envelope
 
@@ -15,11 +15,11 @@ It does not support URL, page, tab, search, LLM, or other browsing telemetry.
 | `session_id` | Nullable future local session identifier |
 | `extension_version` | Producing extension version |
 | `capture_mode` | `off`, `paused`, or `ambient` |
-| `source` | `service_worker`, `options`, or `debug` |
+| `source` | Extension component, including `telemetry` |
 | `payload` | Strict event-specific object |
 
-Raw participant IDs, URLs, cookies, tokens, passwords, and arbitrary DOM/page
-content are not valid schema fields.
+Raw participant IDs, URLs, titles, cookies, tokens, passwords, query strings,
+and arbitrary DOM/page content are not valid schema fields.
 
 ## Version 1 Event Types
 
@@ -29,6 +29,11 @@ content are not valid schema fields.
 - `capture_resumed`: empty payload
 - `config_changed`: names of changed configuration fields, not values
 - `queue_test_event`: marker requiring `synthetic: true`
+- `tab_created`, `tab_activated`: minimized context for an allowed page
+- `tab_updated`: allowed context plus `loading` or `complete`
+- `navigation_committed`: allowed context plus transition metadata
+- `window_focus_changed`: allowed context plus focused state
+- `capture_skipped`: signal and policy reason only; no page identity
 
 Currently produced events are:
 
@@ -38,7 +43,10 @@ Currently produced events are:
 - `config_changed` with changed field names only, never values
 - `queue_test_event` when local-only debug mode is enabled
 
-Ambient enable/disable state is persisted but does not produce browsing events.
+Allowed page context contains only SHA-256 URL hash, hostname, session-local
+tab/window pseudonyms, and browser timestamp. The hash input is scheme, host,
+port, and path; query and fragment are excluded. Navigation may also contain
+Chrome transition type and qualifiers.
 
 ## Local Queue
 

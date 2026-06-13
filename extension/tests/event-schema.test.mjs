@@ -23,6 +23,51 @@ test("creates each supported event type", () => {
     capture_resumed: {},
     config_changed: { changed_fields: ["allowlist"] },
     queue_test_event: { synthetic: true },
+    tab_created: {
+      url_hash: "a".repeat(64),
+      hostname: "example.test",
+      tab_id: `tab_${"b".repeat(64)}`,
+      window_id: `window_${"c".repeat(64)}`,
+      browser_timestamp: 1,
+    },
+    tab_activated: {
+      url_hash: "a".repeat(64),
+      hostname: "example.test",
+      tab_id: `tab_${"b".repeat(64)}`,
+      window_id: `window_${"c".repeat(64)}`,
+      browser_timestamp: 1,
+    },
+    tab_updated: {
+      url_hash: "a".repeat(64),
+      hostname: "example.test",
+      tab_id: `tab_${"b".repeat(64)}`,
+      window_id: `window_${"c".repeat(64)}`,
+      browser_timestamp: 1,
+      status: "complete",
+    },
+    navigation_committed: {
+      url_hash: "a".repeat(64),
+      hostname: "example.test",
+      tab_id: `tab_${"b".repeat(64)}`,
+      window_id: `window_${"c".repeat(64)}`,
+      browser_timestamp: 1,
+      transition_type: "link",
+      transition_qualifiers: [],
+    },
+    window_focus_changed: {
+      url_hash: "a".repeat(64),
+      hostname: "example.test",
+      tab_id: `tab_${"b".repeat(64)}`,
+      window_id: `window_${"c".repeat(64)}`,
+      browser_timestamp: 1,
+      focused: true,
+    },
+    capture_skipped: {
+      signal_type: "navigation_committed",
+      classification: "denied",
+      reason: "denied_domain",
+      category: "webmail",
+    },
   };
 
   for (const eventType of EVENT_TYPES) {
@@ -102,6 +147,23 @@ test("rejects unexpected fields and invalid payloads", () => {
         ...baseInput,
         eventType: "config_changed",
         payload: { changed_fields: ["participant-secret"] },
+      }),
+    /Invalid event/,
+  );
+
+  assert.throws(
+    () =>
+      createEvent({
+        ...baseInput,
+        eventType: "tab_activated",
+        payload: {
+          url_hash: "a".repeat(64),
+          hostname: "example.test",
+          tab_id: "raw-tab-id",
+          window_id: `window_${"c".repeat(64)}`,
+          browser_timestamp: 1,
+          title: "must not be accepted",
+        },
       }),
     /Invalid event/,
   );

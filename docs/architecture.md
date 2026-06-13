@@ -2,18 +2,18 @@
 
 ## Current State
 
-A minimal extension exists under `extension/`. It includes a Manifest V3 state
-controller, popup, options page, local persistence, and a URL privacy filter. It
-has no browsing telemetry, host permissions, content scripts, backend, or ETL.
+A minimal extension exists under `extension/`. It includes Manifest V3 controls,
+local persistence, a URL privacy filter, and minimized navigation telemetry. It
+has no host permissions, content scripts, page parsing, backend, or ETL.
 
 ## Extension Layout
 
-- `extension/manifest.json`: storage-only MV3 declaration
-- `extension/src/background/`: local state controller service worker
+- `extension/manifest.json`: MV3 with storage and webNavigation permissions
+- `extension/src/background/`: service worker and telemetry controller
 - `extension/src/popup/`: capture-status popup
 - `extension/src/options/`: local consent, configuration, and debug controls
 - `extension/src/config/`: readable default domain policy
-- `extension/src/shared/`: state, privacy filter, schema, queue, and storage
+- `extension/src/shared/`: state, filtering, identifiers, schema, and storage
 - `extension/scripts/`: dependency-free policy checks
 
 ## Planned Components
@@ -21,14 +21,14 @@ has no browsing telemetry, host permissions, content scripts, backend, or ETL.
 1. **Chrome Manifest V3 extension**
    - Runs in ambient mode rather than around a declared task.
    - Exposes consent state and visible pause/resume controls.
-   - Applies an allowlist-first domain policy before parsing.
+   - Applies an allowlist-first domain policy before local capture.
 2. **Site adapters**
    - Produce minimal structured events for explicitly supported search and LLM
      domains.
    - Avoid broad DOM or page capture.
 3. **Privacy filter**
    - Classifies URLs as allowed, denied, private/sensitive, unsupported, or
-     invalid before any future adapter runs.
+     invalid before telemetry or any future adapter runs.
    - Applies deny and sensitive rules before default or custom allowlists.
 4. **Local queue**
    - Stores validated events before any future upload.
@@ -41,7 +41,7 @@ has no browsing telemetry, host permissions, content scripts, backend, or ETL.
 
 ## Event Flow
 
-`browser signal -> allowlist check -> site adapter -> privacy filter -> local queue`
+`browser signal -> consent gate -> privacy filter -> minimization -> local queue`
 
 Future upload must be separately consented, authenticated, and documented.
 

@@ -116,6 +116,24 @@ test("state persists across controller recreation", async () => {
   assert.equal(state.capture_status, "paused");
 });
 
+test("telemetry context exposes gates and pseudonymous identifiers only", async () => {
+  const storage = createMemoryStateStorage();
+  const { controller } = createController(storage);
+  await controller.updateConfig({
+    participant_id_hash: "c".repeat(64),
+    allowlist: ["example.invalid"],
+  });
+  await controller.setConsent(true);
+  await controller.setAmbientEnabled(true);
+
+  assert.deepEqual(await controller.getTelemetryContext(), {
+    capture_status: "active",
+    participant_id_hash: "c".repeat(64),
+    session_id: "session-1",
+    allowlist: ["example.invalid"],
+  });
+});
+
 test("rejects unsafe study server URLs", async () => {
   const { controller } = createController(createMemoryStateStorage());
 
