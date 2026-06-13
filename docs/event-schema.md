@@ -1,7 +1,7 @@
 # Event Schema
 
-Schema version 1 supports local control events, minimized navigation telemetry,
-and scoped search exposure. It does not support snippets or LLM content.
+Schema version 1 supports local controls, minimized navigation, search exposure,
+and metadata-first LLM interactions. Response text is not supported.
 
 ## Common Envelope
 
@@ -18,7 +18,7 @@ and scoped search exposure. It does not support snippets or LLM content.
 | `source` | Extension component, including `telemetry` |
 | `payload` | Strict event-specific object |
 
-Raw participant IDs, full URLs, cookies, tokens, passwords, snippets, and
+Raw participant IDs, full URLs, response text, cookies, secrets, snippets, and
 arbitrary DOM/page content are not valid schema fields.
 
 ## Version 1 Event Types
@@ -37,6 +37,10 @@ arbitrary DOM/page content are not valid schema fields.
 - `search_query_observed`: engine, URL hash, and redacted-or-null query
 - `search_results_exposed`: up to 20 minimized result records
 - `search_result_clicked`: inferred rank and minimized destination
+- `llm_prompt_observed`: redacted-or-null prompt and turn metadata
+- `llm_response_observed`: response index/source count; no response text
+- `llm_source_links_exposed`: minimized source hostname/hash records
+- `llm_interaction_metadata`: turn/source counts, tool, model, parser version
 - `parser_error`: allowlisted error code and parser metadata only
 
 Currently produced events are:
@@ -55,6 +59,11 @@ Chrome transition type and qualifiers.
 Search result records contain rank, title, destination hostname/hash, and a
 conservative result type. Ads are omitted by current parsers. Query and title
 text are approved only for this prototype scope; `TODO(IRB)` before study use.
+
+LLM records include tool, optional model, page hash, session-local conversation
+ID, and browser context. Prompts are redacted and capped at 500 characters.
+Responses are metadata-only. Sources contain hostname/hash only. Prompt text is
+prototype-only; `TODO(IRB)` before study use.
 
 ## Local Queue
 

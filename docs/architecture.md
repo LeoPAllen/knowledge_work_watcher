@@ -4,13 +4,14 @@
 
 A minimal extension exists under `extension/`. It includes Manifest V3 controls,
 local persistence, a URL privacy filter, minimized navigation telemetry, and
-search parsers scoped to three search hosts. It has no backend or ETL.
+scoped search/LLM parsers. It has no backend or ETL.
 
 ## Extension Layout
 
 - `extension/manifest.json`: MV3 with storage and webNavigation permissions
 - `extension/src/background/`: service worker and telemetry controller
 - `extension/src/search/`: scoped content script and engine parsers
+- `extension/src/llm/`: scoped content script and tool parsers
 - `extension/src/popup/`: capture-status popup
 - `extension/src/options/`: local consent, configuration, and debug controls
 - `extension/src/config/`: readable default domain policy
@@ -25,7 +26,7 @@ search parsers scoped to three search hosts. It has no backend or ETL.
    - Applies an allowlist-first domain policy before local capture.
 2. **Site adapters**
    - Search adapters produce minimal structured events for three named domains.
-   - LLM adapters remain deferred.
+   - LLM adapters produce prompts, metadata, and source links without responses.
    - Avoid broad DOM or page capture.
 3. **Privacy filter**
    - Classifies URLs as allowed, denied, private/sensitive, unsupported, or

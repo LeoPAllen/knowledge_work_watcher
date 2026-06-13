@@ -16,6 +16,10 @@ export const EVENT_TYPES = Object.freeze([
   "search_query_observed",
   "search_results_exposed",
   "search_result_clicked",
+  "llm_prompt_observed",
+  "llm_response_observed",
+  "llm_source_links_exposed",
+  "llm_interaction_metadata",
   "parser_error",
 ]);
 
@@ -28,6 +32,7 @@ const SOURCES = new Set([
   "debug",
   "telemetry",
   "search_parser",
+  "llm_parser",
 ]);
 const CONFIG_FIELDS = new Set([
   "participant_id_hash",
@@ -108,6 +113,13 @@ function isBrowserPseudonym(value, kind) {
 }
 
 const SEARCH_ENGINES = new Set(["google", "bing", "duckduckgo"]);
+const LLM_TOOLS = new Set([
+  "chatgpt",
+  "claude",
+  "gemini",
+  "perplexity",
+  "copilot",
+]);
 const RESULT_TYPES = new Set(["organic", "ad", "ai", "other", "unknown"]);
 const REDACTION_REASONS = new Set(["email", "phone", "secret", "missing"]);
 
@@ -125,6 +137,17 @@ const SEARCH_CONTEXT_FIELDS = new Set([
   "tab_id",
   "window_id",
   "browser_timestamp",
+]);
+
+const LLM_CONTEXT_FIELDS = new Set([
+  "page_url_hash",
+  "llm_hostname",
+  "tab_id",
+  "window_id",
+  "conversation_id",
+  "browser_timestamp",
+  "llm_tool",
+  "model_name",
 ]);
 
 function validatePageContext(payload, extraFields = new Set()) {
@@ -173,6 +196,80 @@ function validateSearchResult(result) {
     isSha256(result.destination_url_hash) &&
     RESULT_TYPES.has(result.result_type)
   );
+}
+
+function validateLlmContext(payload, extraFields = new Set()) {
+  const allowedFields = new Set([...LLM_CONTEXT_FIELDS, ...extraFields]);
+  return (
+    hasOnlyFields(payload, allowedFields) &&
+    isSha256(payload.page_url_hash) &&
+    isHostname(payload.llm_hostname) &&
+    isBrowserPseudonym(payload.tab_id, "tab") &&
+    isBrowserPseudonym(payload.window_id, "window") &&
+    typeof payload.conversation_id === "string" &&
+    /^conversation_[a-f0-9]{64}$/.test(payload.conversation_id) &&
+    isFiniteTimestamp(payload.browser_timestamp) &&
+    LLM_TOOLS.has(payload.llm_tool) &&
+    (payload.model_name === null ||
+      (isNonEmptyString(payload.model_name) && payload.model_name.length <= 100))
+  );
+}
+
+function validateSource(source) {
+  return (
+    isPlainObject(source) &&
+    hasOnlyFields(
+      source,
+      new Set(["destination_hostname", "destination_url_hash"]),
+    ) &&
+    isHostname(source.destination_hostname) &&
+    isSha256(source.destination_url_hash)
+  );
+}
+
+function validateParserError(payload) {
+  if (payload.parser_kind === "search") {
+    return (
+      validateSearchContext(
+        payload,
+        new Set([
+          "parser_kind",
+          "search_engine",
+          "parser_stage",
+          "error_code",
+          "parser_version",
+        ]),
+      ) &&
+      payload.parser_stage === "parse" &&
+      [
+        "unsupported_search_page",
+        "results_root_missing",
+        "parse_failed",
+      ].includes(payload.error_code) &&
+      payload.parser_version === 1
+    );
+  }
+  if (payload.parser_kind === "llm") {
+    return (
+      validateLlmContext(
+        payload,
+        new Set([
+          "parser_kind",
+          "parser_stage",
+          "error_code",
+          "parser_version",
+        ]),
+      ) &&
+      payload.parser_stage === "parse" &&
+      [
+        "unsupported_llm_page",
+        "conversation_root_missing",
+        "parse_failed",
+      ].includes(payload.error_code) &&
+      payload.parser_version === 1
+    );
+  }
+  return false;
 }
 
 function validatePayload(eventType, payload) {
@@ -295,25 +392,78 @@ function validatePayload(eventType, payload) {
         isHostname(payload.destination_hostname) &&
         isSha256(payload.destination_url_hash)
       );
-    case "parser_error":
+    case "llm_prompt_observed":
       return (
-        validateSearchContext(
+        validateLlmContext(
           payload,
           new Set([
-            "search_engine",
-            "parser_stage",
-            "error_code",
+            "prompt_index",
+            "prompt_text",
+            "prompt_redacted",
+            "redaction_reason",
+          ]),
+        ) &&
+        Number.isInteger(payload.prompt_index) &&
+        payload.prompt_index > 0 &&
+        (payload.prompt_text === null ||
+          (isNonEmptyString(payload.prompt_text) &&
+            payload.prompt_text.length <= 500)) &&
+        typeof payload.prompt_redacted === "boolean" &&
+        (payload.prompt_redacted
+          ? payload.prompt_text === null &&
+            ["email", "phone", "secret"].includes(payload.redaction_reason)
+          : payload.prompt_text === null
+            ? payload.redaction_reason === "missing"
+            : payload.redaction_reason === null)
+      );
+    case "llm_response_observed":
+      return (
+        validateLlmContext(
+          payload,
+          new Set([
+            "response_index",
+            "response_text_captured",
+            "source_count",
+          ]),
+        ) &&
+        Number.isInteger(payload.response_index) &&
+        payload.response_index > 0 &&
+        payload.response_text_captured === false &&
+        Number.isInteger(payload.source_count) &&
+        payload.source_count >= 0 &&
+        payload.source_count <= 20
+      );
+    case "llm_source_links_exposed":
+      return (
+        validateLlmContext(
+          payload,
+          new Set(["response_index", "sources"]),
+        ) &&
+        Number.isInteger(payload.response_index) &&
+        payload.response_index > 0 &&
+        Array.isArray(payload.sources) &&
+        payload.sources.length > 0 &&
+        payload.sources.length <= 20 &&
+        payload.sources.every(validateSource)
+      );
+    case "llm_interaction_metadata":
+      return (
+        validateLlmContext(
+          payload,
+          new Set([
+            "prompt_count",
+            "response_count",
+            "source_count",
             "parser_version",
           ]),
         ) &&
-        payload.parser_stage === "parse" &&
-        [
-          "unsupported_search_page",
-          "results_root_missing",
-          "parse_failed",
-        ].includes(payload.error_code) &&
+        ["prompt_count", "response_count", "source_count"].every(
+          (field) => Number.isInteger(payload[field]) && payload[field] >= 0,
+        ) &&
         payload.parser_version === 1
       );
+    case "parser_error":
+      return validateParserError(payload);
     default:
       return false;
   }

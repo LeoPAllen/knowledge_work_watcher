@@ -2,9 +2,9 @@
 
 This directory contains a runtime dependency-free Chrome Manifest V3 extension.
 It has no broad page-text capture or network behavior. Narrow content scripts
-parse recognized result elements on Google, Bing, and DuckDuckGo. The `storage`
-permission supports a bounded local queue; `webNavigation` supplies committed
-top-frame URLs.
+parse named elements on supported search and LLM tools. The `storage` permission
+supports a bounded local queue; `webNavigation` supplies committed top-frame
+URLs.
 
 ## Load Unpacked
 
@@ -23,7 +23,9 @@ When capture is active, allowlisted top-frame navigation plus related tab/window
 signals are queued locally. Supported search pages may also queue a redacted
 query, result rank/title/type, and destination hostname/hash. Snippets, raw
 URLs, DOM, account data, and denied destination details are not stored.
-Nothing is transmitted.
+LLM pages may queue redacted prompts, response metadata, model labels, and
+source hostname/hashes. Response text and attachments are excluded. Nothing is
+transmitted.
 
 ## Manual Privacy Check
 

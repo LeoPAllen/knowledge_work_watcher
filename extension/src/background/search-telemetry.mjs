@@ -229,6 +229,7 @@ export function createSearchTelemetry({
           sender,
           Date.now(),
         )),
+        parser_kind: "search",
         search_engine: engine,
         parser_stage: "parse",
         error_code: message.code,

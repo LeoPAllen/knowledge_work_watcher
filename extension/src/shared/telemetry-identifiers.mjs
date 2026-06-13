@@ -21,3 +21,12 @@ export async function pseudonymizeBrowserId(sessionId, kind, browserId) {
   }
   return `${kind}_${await sha256(`${sessionId}\0${kind}\0${browserId}`)}`;
 }
+
+export async function pseudonymizeConversationId(sessionId, tool, pagePath) {
+  if (!sessionId || !tool || typeof pagePath !== "string") {
+    throw new TypeError("sessionId, tool, and pagePath are required");
+  }
+  return `conversation_${await sha256(
+    `${sessionId}\0conversation\0${tool}\0${pagePath}`,
+  )}`;
+}

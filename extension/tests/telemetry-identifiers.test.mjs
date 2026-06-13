@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   hashAllowedUrl,
   pseudonymizeBrowserId,
+  pseudonymizeConversationId,
 } from "../src/shared/telemetry-identifiers.mjs";
 
 test("URL hashes omit query, fragment, credentials, and hostname case", async () => {
@@ -14,6 +15,23 @@ test("URL hashes omit query, fragment, credentials, and hostname case", async ()
 
   assert.equal(first, second);
   assert.match(first, /^[a-f0-9]{64}$/);
+});
+
+test("conversation identifiers are scoped by session, tool, and path", async () => {
+  const first = await pseudonymizeConversationId(
+    "session-a",
+    "chatgpt",
+    "/c/demo",
+  );
+  assert.match(first, /^conversation_[a-f0-9]{64}$/);
+  assert.equal(
+    first,
+    await pseudonymizeConversationId("session-a", "chatgpt", "/c/demo"),
+  );
+  assert.notEqual(
+    first,
+    await pseudonymizeConversationId("session-b", "chatgpt", "/c/demo"),
+  );
 });
 
 test("browser identifiers are stable only within a session and kind", async () => {
