@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Knowledge Work Watcher Options</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main class="options">
+      <header>
+        <p class="eyebrow">Configuration preview</p>
+        <h1>Knowledge Work Watcher</h1>
+        <p class="intro">
+          These fields are placeholders. Configuration and consent are not yet
+          implemented, saved, or transmitted.
+        </p>
+      </header>
+
+      <form>
+        <fieldset disabled>
+          <legend>Study configuration</legend>
+
+          <label for="participant-id">Participant ID</label>
+          <input id="participant-id" type="text" placeholder="Not configured">
+
+          <label for="server-url">Study server URL</label>
+          <input id="server-url" type="url" placeholder="Not configured">
+
+          <label for="allowlist">Allowlist preview</label>
+          <textarea id="allowlist" rows="4" placeholder="No domains configured"></textarea>
+
+          <label class="checkbox-row" for="consent">
+            <input id="consent" type="checkbox">
+            I consent to the approved study data collection
+          </label>
+        </fieldset>
+      </form>
+
+      <aside class="notice" aria-label="Current status">
+        Ambient capture is off. This extension shell collects no browsing data.
+      </aside>
+    </main>
+  </body>
+</html>
