@@ -72,3 +72,45 @@ textarea {
   margin-top: 24px;
   padding: 14px 16px;
 }
+
+.debug-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-top: 24px;
+  padding: 24px;
+}
+
+.debug-panel h2 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.debug-panel > p:not(.eyebrow, .queue-count, .debug-status) {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.queue-count {
+  margin: 20px 0 12px;
+}
+
+.debug-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+button.secondary {
+  background: #536579;
+}
+
+button.danger {
+  background: #8a3a3a;
+}
+
+.debug-status {
+  color: var(--muted);
+  font-size: 13px;
+  min-height: 20px;
+}

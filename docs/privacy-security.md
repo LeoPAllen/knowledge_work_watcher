@@ -6,6 +6,7 @@
 - Pause/resume state is continuously visible and user-controlled.
 - Domains are denied unless explicitly allowlisted.
 - Events are minimized before entering a local queue.
+- The local queue is bounded at 500 validated events.
 - Backend upload is not implemented.
 
 ## Prohibited Capture
@@ -25,6 +26,15 @@ explicitly permits it for named fields and domains.
 - Prevent sensitive values from entering logs or error reports.
 - Use synthetic/demo data for development and tests.
 - Review changes to permissions, collection, retention, and transport manually.
+
+## Local Storage and Export
+
+- The queue uses `chrome.storage.local`; it is local but not application-level
+  encrypted and must still be treated as sensitive.
+- The only current automatic event is extension installation metadata.
+- Debug events are explicitly synthetic and contain no participant identifier.
+- JSON export creates a user-managed local file outside extension storage.
+- Raw participant IDs must not enter events, logs, or exports.
 
 ## Deferred Decisions
 

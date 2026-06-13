@@ -1,5 +1,15 @@
 # Project History
 
+## 2026-06-13 - Typed events and local queue
+
+- Added schema version 1 for extension-state and synthetic test events.
+- Added runtime validation and a 500-event local queue in extension storage.
+- Added options controls to create, count, export, and clear queued events.
+- Added Node tests for validation, queue operations, limits, and concurrency.
+- Added only the Chrome `storage` permission; no host access or browsing capture.
+- Kept participant hashes and session IDs nullable; raw IDs are not queued.
+- Next: implement reviewed consent and capture-state transitions.
+
 ## 2026-06-13 - Minimal MV3 shell
 
 - Added a dependency-free Chrome Manifest V3 extension shell.

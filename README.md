@@ -10,9 +10,10 @@ allowlist-first domain policy.
 ## Status
 
 This repository contains a minimal Chrome Manifest V3 extension shell and
-project documentation. The shell has no telemetry, host permissions, content
-scripts, backend integration, or research ETL. Only synthetic or demo data may
-be used during development.
+project documentation. It includes a versioned internal event schema and a
+bounded local queue for extension metadata and synthetic test events. It has no
+browsing capture, host permissions, content scripts, backend integration, or
+research ETL. Only synthetic or demo data may be used during development.
 
 ## MVP Direction
 
@@ -48,5 +49,5 @@ decision. Real participant data must never be committed.
 ## Development
 
 See [extension/README.md](extension/README.md) for unpacked-loading and manifest
-check instructions. See [AGENTS.md](AGENTS.md) for repository rules. No
+and test instructions. See [AGENTS.md](AGENTS.md) for repository rules. No
 dependencies are required at this stage.
