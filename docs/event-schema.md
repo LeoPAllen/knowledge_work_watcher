@@ -1,7 +1,7 @@
 # Event Schema
 
-Schema version 1 supports local controls, minimized navigation, search exposure,
-and metadata-first LLM interactions. Response text is not supported.
+Schema version 1 supports local controls and minimized navigation, search, LLM,
+and knowledge-site exposure. Broad page text is not supported.
 
 ## Common Envelope
 
@@ -41,15 +41,12 @@ arbitrary DOM/page content are not valid schema fields.
 - `llm_response_observed`: response index/source count; no response text
 - `llm_source_links_exposed`: minimized source hostname/hash records
 - `llm_interaction_metadata`: turn/source counts, tool, model, parser version
+- `knowledge_page_exposed`: site/category, page type, title, and URL hash
+- `qna_question_exposed`: question ID, tags, and score metadata
+- `qna_answer_exposed`: answer ID, accepted marker, and score metadata
+- `code_repo_exposed`: validated public repository URL metadata
+- `docs_page_exposed`: page/package title and up to 20 section headings
 - `parser_error`: allowlisted error code and parser metadata only
-
-Currently produced events are:
-
-- `extension_installed` on extension installation or update
-- `consent_changed` on local acceptance or revocation
-- `capture_paused` and `capture_resumed` on explicit user actions
-- `config_changed` with changed field names only, never values
-- `queue_test_event` when local-only debug mode is enabled
 
 Allowed page context contains only SHA-256 URL hash, hostname, session-local
 tab/window pseudonyms, and browser timestamp. The hash input is scheme, host,
@@ -65,11 +62,14 @@ ID, and browser context. Prompts are redacted and capped at 500 characters.
 Responses are metadata-only. Sources contain hostname/hash only. Prompt text is
 prototype-only; `TODO(IRB)` before study use.
 
+Knowledge records include title, category, page type, referrer category, and
+site-specific metadata. Q&A bodies, code, README/article text, comments, and raw
+DOM are excluded. Titles/headings are prototype-only; `TODO(IRB)` before use.
+
 ## Local Queue
 
 - Events are validated before append.
 - The queue uses `chrome.storage.local` and rejects appends after 500 events.
-- Events can be counted, exported as JSON, or cleared from the options page.
 - No network upload exists.
 
 ## Versioning

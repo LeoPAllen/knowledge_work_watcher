@@ -21,11 +21,15 @@ telemetry. All development records must be synthetic or demo data.
 | Search query | Redacted query or null, engine | Supported search pages only |
 | Search exposure | Rank, title, destination hostname/hash, type | Up to 20 recognized organic results |
 | Search click | Rank and destination hostname/hash | Recognized result anchors only |
-| Parser error | Engine, code, version, page hash | No exception or DOM text |
+| Parser error | Kind/site, code, version, page hash | No exception or DOM text |
 | LLM prompt | Redacted prompt or null, turn, tool/model | Named prompt nodes only |
 | LLM response | Turn and source count | Response text always excluded |
 | LLM sources | Destination hostname/hash | Assistant links, max 20 |
 | LLM interaction | Counts, parser version, conversation ID | Metadata only |
+| Knowledge page | Site/category, type, title, URL hash | Allowlisted pages only |
+| Q&A | IDs, tags, scores, accepted marker | No question/answer text |
+| Public repository | Owner/repo, path, issue/PR number | Explicit public marker required |
+| Docs/reference | Title and up to 20 headings | No article/README body |
 | Queue | Validated control/telemetry events | Local export and clearing |
 
 Raw participant IDs are hashed before storage and are not redisplayed.
@@ -47,6 +51,8 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 - Raw URLs, query strings, fragments, credentials, and navigation titles
 - Search snippets, ads, arbitrary page text, and raw DOM
 - LLM response text, profile fields, uploads, attachments, and prompt inputs
+- Q&A bodies, code, README/article text, comments, and raw page content
+- Private/ambiguous GitHub repositories, profiles, settings, and dashboards
 
 ## Deferred
 
@@ -56,3 +62,4 @@ Raw participant IDs are hashed before storage and are not redisplayed.
   fields
 - `TODO(IRB)`: approve search query and result-title fields before study use
 - `TODO(IRB)`: approve LLM prompt text before study use
+- `TODO(IRB)`: approve knowledge-page titles/headings before study use

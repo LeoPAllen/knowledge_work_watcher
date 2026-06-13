@@ -1,5 +1,15 @@
 # Project History
 
+## 2026-06-13 - Knowledge-site exposure parsers
+
+- Added scoped Q&A, GitHub, docs, package, and Wikipedia parsers.
+- Captures titles/headings and structured IDs, tags, scores, and page types.
+- Q&A bodies, code, README/article text, comments, and raw DOM are excluded.
+- GitHub events require a valid repository URL and explicit public marker.
+- Private, ambiguous, profile, settings, and unknown routes skip silently.
+- Added exact host scopes and synthetic fixtures across knowledge categories.
+- Next: validate live selectors before expanding supported page types.
+
 ## 2026-06-13 - LLM interaction parsers
 
 - Added scoped parsers for ChatGPT, Claude, Gemini, Perplexity, and Copilot.

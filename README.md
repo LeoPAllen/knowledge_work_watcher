@@ -11,10 +11,10 @@ allowlist-first domain policy.
 
 This repository contains a dependency-free Chrome Manifest V3 extension and
 project documentation. It records minimized navigation, search exposure, and
-metadata-first LLM interactions locally only after consent. Content scripts are
-limited to named search and LLM tools. It has no LLM response-text capture,
-broad page capture, upload, backend, or research ETL. Only synthetic or demo
-data may be used during development.
+metadata-first LLM and knowledge-site interactions locally only after consent.
+Content scripts are limited to named search, LLM, and knowledge sites. It has no
+LLM response-text capture, broad page capture, upload, backend, or research ETL.
+Only synthetic or demo data may be used during development.
 
 ## MVP Direction
 

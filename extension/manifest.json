@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Knowledge Work Watcher",
   "version": "0.1.0",
-  "description": "Privacy-preserving research extension with local, consent-gated navigation, search, and LLM telemetry.",
+  "description": "Privacy-preserving research extension with local, consent-gated knowledge-work telemetry.",
   "permissions": [
     "storage",
     "webNavigation"
@@ -16,7 +16,24 @@
     "https://gemini.google.com/*",
     "https://perplexity.ai/*",
     "https://www.perplexity.ai/*",
-    "https://copilot.microsoft.com/*"
+    "https://copilot.microsoft.com/*",
+    "https://stackoverflow.com/*",
+    "https://*.stackexchange.com/*",
+    "https://serverfault.com/*",
+    "https://superuser.com/*",
+    "https://askubuntu.com/*",
+    "https://mathoverflow.net/*",
+    "https://stackapps.com/*",
+    "https://github.com/*",
+    "https://developer.mozilla.org/*",
+    "https://www.npmjs.com/*",
+    "https://pypi.org/*",
+    "https://*.wikipedia.org/*",
+    "https://docs.github.com/*",
+    "https://docs.gitlab.com/*",
+    "https://docs.python.org/*",
+    "https://learn.microsoft.com/*",
+    "https://developers.google.com/*"
   ],
   "content_scripts": [
     {
@@ -50,6 +67,33 @@
       "js": [
         "src/llm/llm-parser.js",
         "src/llm/llm-content-script.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://stackoverflow.com/*",
+        "https://*.stackexchange.com/*",
+        "https://serverfault.com/*",
+        "https://superuser.com/*",
+        "https://askubuntu.com/*",
+        "https://mathoverflow.net/*",
+        "https://stackapps.com/*",
+        "https://github.com/*",
+        "https://developer.mozilla.org/*",
+        "https://www.npmjs.com/*",
+        "https://pypi.org/*",
+        "https://*.wikipedia.org/*",
+        "https://docs.github.com/*",
+        "https://docs.gitlab.com/*",
+        "https://docs.python.org/*",
+        "https://learn.microsoft.com/*",
+        "https://developers.google.com/*"
+      ],
+      "js": [
+        "src/knowledge/knowledge-parser.js",
+        "src/knowledge/knowledge-content-script.js"
       ],
       "run_at": "document_idle",
       "all_frames": false

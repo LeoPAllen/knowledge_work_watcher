@@ -6,6 +6,7 @@ import { createCaptureStateController } from "../shared/capture-state.mjs";
 import { createNavigationTelemetry } from "./navigation-telemetry.mjs";
 import { createSearchTelemetry } from "./search-telemetry.mjs";
 import { createLlmTelemetry } from "./llm-telemetry.mjs";
+import { createKnowledgeTelemetry } from "./knowledge-telemetry.mjs";
 
 const queue = createLocalQueue(createChromeStorageAdapter());
 const extensionVersion = chrome.runtime.getManifest().version;
@@ -26,6 +27,11 @@ const searchTelemetry = createSearchTelemetry({
   extensionVersion,
 });
 const llmTelemetry = createLlmTelemetry({
+  stateController: controller,
+  queue,
+  extensionVersion,
+});
+const knowledgeTelemetry = createKnowledgeTelemetry({
   stateController: controller,
   queue,
   extensionVersion,
@@ -77,7 +83,7 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  const searchActions = {
+  const parserActions = {
     get_capture_gate: async () => ({
       active: await searchTelemetry.isCaptureActive(),
     }),
@@ -101,10 +107,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       await llmTelemetry.onParserError(message, sender);
       return {};
     },
+    knowledge_page_parsed: async () => {
+      await knowledgeTelemetry.onPageParsed(message.parsed, sender);
+      return {};
+    },
+    knowledge_parser_error: async () => {
+      await knowledgeTelemetry.onParserError(message, sender);
+      return {};
+    },
   };
-  const searchAction = searchActions[message?.type];
-  if (searchAction) {
-    searchAction()
+  const parserAction = parserActions[message?.type];
+  if (parserAction) {
+    parserAction()
       .then((result) => sendResponse({ ok: true, ...result }))
       .catch(() => sendResponse({ ok: false }));
     return true;
