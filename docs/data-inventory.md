@@ -8,7 +8,9 @@ records must be synthetic or demo data.
 | Category | Stored value | Use |
 | --- | --- | --- |
 | Participant | SHA-256 hash or null | Future pseudonymous event linkage |
-| Study server | URL string | Placeholder only; no requests are made |
+| Study server | HTTPS/loopback origin | Batch ingestion endpoint |
+| Study token | Write-only local string | MVP bearer authentication |
+| Upload state | Enabled/status/retry timestamps | User control and diagnostics |
 | Consent | Accepted/not accepted | Gates ambient control state |
 | Capture | Enabled, paused, session ID | Visible local control state |
 | Allowlist | Domain strings | Custom privacy-filter inputs; no adapters yet |
@@ -31,6 +33,7 @@ records must be synthetic or demo data.
 | Public repository | Owner/repo, path, issue/PR number | Explicit public marker required |
 | Docs/reference | Title and up to 20 headings | No article/README body |
 | Queue | Validated control/telemetry events | Local export and clearing |
+| Rejections | Event ID/type, reason, timestamp | Metadata-only dead letters |
 | Raw ingestion | Validated event JSON | Append-only local SQLite |
 | Server metadata | Receive time and request ID | Operations and tracing |
 
@@ -49,7 +52,7 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 - Broad DOM or page-text capture
 - Private, intranet, localhost, file, and non-allowlisted domains
 - Real participant records in the repository
-- Extension network transmission; upload is not implemented
+- Upload while disabled, paused, not consented, or permission is absent
 - Raw URLs, query strings, fragments, credentials, and navigation titles
 - Search snippets, ads, arbitrary page text, and raw DOM
 - LLM response text, profile fields, uploads, attachments, and prompt inputs
@@ -58,7 +61,7 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 
 ## Deferred
 
-- Upload receipts and production operational logs
+- Production upload receipts and operational logs
 - Research ETL outputs and episode-level derived tables
 - `TODO(IRB)`: retention, deletion, participant identifiers, and approved text
   fields

@@ -5,16 +5,14 @@
 - Pause/resume state is continuously visible and user-controlled.
 - Ambient state cannot be enabled before explicit placeholder consent.
 - Revoking consent locally disables ambient state and clears its session.
-- Domains are denied unless explicitly allowlisted.
 - Events are minimized before entering a local queue.
 - The local queue is bounded at 500 validated events.
-- Extension upload is not implemented.
+- Upload is off by default and requires active consent/capture.
 - Navigation capture requires active consent, ambient mode, and an allowed URL.
 
 ## Prohibited Capture
 - Passwords, form fields, cookies, authentication tokens, or clipboard data
 - Private, intranet, localhost, file, or unapproved domains
-- Broad DOM snapshots, page text, screenshots, or browsing history imports
 - Real participant data in source control, fixtures, logs, or examples
 
 Only search query/title and named LLM prompt text are permitted on reviewed
@@ -23,9 +21,9 @@ domains. LLM response text and all other page text remain prohibited.
 ## Security Expectations
 - Request the narrowest Chrome permissions and host patterns possible.
 - Validate event shape and domain eligibility at collection and persistence.
-- Prevent sensitive values from entering logs or error reports.
 - Require bearer authentication and bounded request bodies for ingestion.
 - Keep tokens in environment variables and event bodies out of default logs.
+- Extension tokens are write-only in UI and stored locally without encryption.
 
 ## Local Storage and Export
 - The queue uses `chrome.storage.local`; it is local but not application-level
@@ -34,34 +32,36 @@ domains. LLM response text and all other page text remain prohibited.
 - Participant IDs are hashed in the options page before storage or messaging.
 - Accepted backend events are append-only in local, unencrypted SQLite.
 - Server rows add receive time and request ID; no event query API exists.
+- Failed uploads preserve events; rejection records never contain payloads.
 
 ## URL Policy
 - Every observed navigation URL must pass the shared privacy filter.
 - Denylisted and sensitive rules override default and custom allowlists.
-- Invalid, unknown, and unsupported URLs fail closed.
 - Local/browser pages, login/account surfaces, private networks, webmail,
   private documents, finance, health, and adult domains are blocked.
 - Local/private network URLs require both debug mode and an explicit debug
   override; sensitive paths remain blocked.
-- Custom allowlist domains require review because static sensitive-domain
-  lists cannot identify every sensitive service.
 - Allowed records store hostname and a SHA-256 of scheme/host/path only.
 - Denied, private, invalid, and unknown records omit all page identity.
-- Navigation titles are never requested or stored.
 - Search parsing is limited to named result selectors on Google, Bing, and
   DuckDuckGo; it never reads input fields, snippets, profiles, or raw DOM.
 - Queries containing email, phone, or obvious secret patterns are stored as
   null with a redaction category.
-- Search destinations are reduced to hostname and URL hash after filtering.
 - LLM scripts are limited to ChatGPT, Claude, Gemini, Perplexity, and Copilot.
 - Prompts and model labels use email, phone, and secret redaction.
 - Assistant containers expose link URLs only; response text is never read.
 - Upload, attachment, download, profile, and account elements are excluded.
-- LLM sources store only filtered destination hostname/hash.
 - Knowledge parsers store URL-derived IDs and selected titles/headings only;
   Q&A bodies, code, README/article text, and comments are never read.
 - GitHub requires a valid repository route and public marker; private,
   ambiguous, profile, settings, and unsupported routes skip.
+
+## Upload Policy
+- HTTPS is required except for explicit localhost/127.0.0.1 development.
+- Optional HTTPS access is declared broadly but granted per configured host.
+- Upload stops while paused, disabled, or not consented.
+- Tokens and raw request bodies are never written to logs or status records.
+- Backoff is persisted; only acknowledged events leave the local queue.
 
 ## Consent Status
 - Current consent copy is a development placeholder.

@@ -1,5 +1,16 @@
 # Project History
 
+## 2026-06-13 - Extension upload sync
+
+- Added opt-in, consented, active-capture batch upload to the MVP backend.
+- Requires HTTPS or loopback development URLs and exact runtime host grants.
+- Stores the bearer study token locally but never redisplays or logs it.
+- Removes only acknowledged/duplicate events from the local queue.
+- Preserves request failures with persisted bounded exponential backoff.
+- Moves explicit rejections to a metadata-only local dead-letter queue.
+- Added popup/options status, manual sync, export, and clear controls.
+- Next: replace shared-token auth before any participant deployment.
+
 ## 2026-06-13 - MVP backend ingestion API
 
 - Added Fastify single/batch ingestion, health, and schema-version endpoints.

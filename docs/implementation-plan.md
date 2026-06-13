@@ -36,10 +36,16 @@
 
 - Validate authenticated schema v1 events at a bounded HTTP interface.
 - Store accepted raw events append-only in local SQLite.
-- Keep extension upload and production deployment deferred.
+- Keep production deployment deferred.
+
+## 6. Extension Sync
+
+- Batch queued events only during consented, active ambient capture.
+- Preserve failures, dead-letter explicit rejections, and retry with backoff.
+- Require explicit upload enablement and exact runtime server permission.
 
 ## Deferred
 
-- Extension upload and production authentication
+- Production authentication and deployment
 - Research ETL and episode reconstruction
 - Production deployment and participant enrollment

@@ -95,6 +95,7 @@ textarea {
 
 .consent-panel,
 .capture-panel,
+.upload-panel,
 .debug-panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -105,6 +106,7 @@ textarea {
 
 .consent-panel h2,
 .capture-panel h2,
+.upload-panel h2,
 .debug-panel h2 {
   font-size: 20px;
   margin: 0;
@@ -112,6 +114,7 @@ textarea {
 
 .consent-panel > p:not(.eyebrow),
 .capture-panel > p:not(.eyebrow),
+.upload-panel > p:not(.eyebrow),
 .debug-panel > p:not(.eyebrow, .queue-count, .debug-status) {
   color: var(--muted);
   line-height: 1.5;

@@ -1,8 +1,11 @@
 import { createEvent } from "./event-schema.mjs";
+import { normalizeStudyServerUrl } from "./upload-policy.mjs";
 
 export const DEFAULT_CAPTURE_STATE = Object.freeze({
   participant_id_hash: null,
   study_server_url: "",
+  study_auth_token: "",
+  upload_enabled: false,
   consent_accepted: false,
   ambient_enabled: false,
   paused: false,
@@ -15,6 +18,8 @@ const STATE_FIELDS = new Set(Object.keys(DEFAULT_CAPTURE_STATE));
 const ALLOWED_CONFIG_FIELDS = new Set([
   "participant_id_hash",
   "study_server_url",
+  "study_auth_token",
+  "upload_enabled",
   "allowlist",
   "debug_mode",
 ]);
@@ -24,20 +29,9 @@ function isSha256(value) {
 }
 
 function isValidStudyServerUrl(value) {
-  if (value === "") {
-    return true;
-  }
-  if (typeof value !== "string" || value !== value.trim()) {
-    return false;
-  }
-
   try {
-    const url = new URL(value);
-    return (
-      ["http:", "https:"].includes(url.protocol) &&
-      url.username === "" &&
-      url.password === ""
-    );
+    normalizeStudyServerUrl(value);
+    return true;
   } catch {
     return false;
   }
@@ -57,12 +51,19 @@ function validateState(state) {
     throw new TypeError("participant_id_hash must be null or SHA-256");
   }
   if (!isValidStudyServerUrl(state.study_server_url)) {
-    throw new TypeError("study_server_url must be empty or credential-free HTTP(S)");
+    throw new TypeError("study_server_url must be HTTPS or loopback HTTP");
+  }
+  if (
+    typeof state.study_auth_token !== "string" ||
+    (state.study_auth_token !== "" && state.study_auth_token.length < 16)
+  ) {
+    throw new TypeError("study_auth_token must be empty or at least 16 characters");
   }
   if (
     typeof state.consent_accepted !== "boolean" ||
     typeof state.ambient_enabled !== "boolean" ||
     typeof state.paused !== "boolean" ||
+    typeof state.upload_enabled !== "boolean" ||
     typeof state.debug_mode !== "boolean"
   ) {
     throw new TypeError("capture state flags must be boolean");
@@ -108,6 +109,8 @@ function publicState(state) {
   return {
     participant_id_configured: state.participant_id_hash !== null,
     study_server_url: state.study_server_url,
+    study_auth_token_configured: state.study_auth_token !== "",
+    upload_enabled: state.upload_enabled,
     consent_accepted: state.consent_accepted,
     ambient_enabled: state.ambient_enabled,
     paused: state.paused,
@@ -136,7 +139,9 @@ export function createCaptureStateController({
     if (stored === null) {
       return structuredClone(DEFAULT_CAPTURE_STATE);
     }
-    return structuredClone(validateState(stored));
+    return structuredClone(
+      validateState({ ...DEFAULT_CAPTURE_STATE, ...stored }),
+    );
   }
 
   async function appendStateEvent(state, eventType, source, payload = {}) {
@@ -180,8 +185,28 @@ export function createCaptureStateController({
       };
     },
 
+    async getUploadContext() {
+      await pendingWrite;
+      const state = await readState();
+      return {
+        capture_status: getCaptureStatus(state),
+        consent_accepted: state.consent_accepted,
+        ambient_enabled: state.ambient_enabled,
+        paused: state.paused,
+        upload_enabled: state.upload_enabled,
+        study_server_url: state.study_server_url,
+        study_auth_token: state.study_auth_token,
+      };
+    },
+
     async updateConfig(changes, source = "options") {
       return runExclusive(async () => {
+        if ("study_server_url" in changes) {
+          changes = {
+            ...changes,
+            study_server_url: normalizeStudyServerUrl(changes.study_server_url),
+          };
+        }
         const changedFields = Object.keys(changes);
         if (
           changedFields.length === 0 ||
@@ -225,6 +250,7 @@ export function createCaptureStateController({
               consent_accepted: false,
               ambient_enabled: false,
               paused: false,
+              upload_enabled: false,
               session_id: null,
             };
         return persistThenLog(nextState, "consent_changed", source, {

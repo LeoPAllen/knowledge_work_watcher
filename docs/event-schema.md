@@ -21,7 +21,6 @@ Raw participant IDs, full URLs, response text, cookies, secrets, snippets, and
 arbitrary DOM/page content are not valid schema fields.
 
 ## Version 1 Event Types
-
 - `extension_installed`, `consent_changed`: lifecycle/consent state
 - `capture_paused`, `capture_resumed`: empty control payloads
 - `config_changed`: names of changed configuration fields, not values
@@ -61,16 +60,17 @@ site-specific metadata. Q&A bodies, code, README/article text, comments, and raw
 DOM are excluded. Titles/headings are prototype-only; `TODO(IRB)` before use.
 
 ## Local Queue
-
 - Events are validated before append.
 - The queue uses `chrome.storage.local` and rejects appends after 500 events.
-- No network upload exists.
+- Accepted/duplicate events leave the queue only after server acknowledgement.
+- Rejections retain event ID/type and safe reason, never the event payload.
 
 ## Backend Ingestion
 - Single and batch endpoints accept only schema version 1 events.
 - The backend reuses the canonical validator and rejects unknown fields.
 - Accepted rows add server receive time and request ID without changing events.
 - SQLite stores the raw validated event JSON append-only.
+- Batch responses are validated before local queue settlement.
 
 ## Versioning
 
