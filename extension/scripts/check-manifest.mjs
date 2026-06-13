@@ -11,6 +11,7 @@ const referencedFiles = [
   manifest.action?.default_popup,
   manifest.background?.service_worker,
   manifest.options_page,
+  ...(manifest.content_scripts ?? []).flatMap((script) => script.js ?? []),
 ].filter(Boolean);
 
 if (manifest.manifest_version !== 3) {
@@ -35,12 +36,41 @@ if (
   errors.push("the only permitted extension permissions are storage and webNavigation");
 }
 
-if ("host_permissions" in manifest || "optional_host_permissions" in manifest) {
-  errors.push("host permissions must be omitted for the shell");
+const expectedHosts = [
+  "https://www.google.com/*",
+  "https://www.bing.com/*",
+  "https://duckduckgo.com/*",
+];
+if (
+  JSON.stringify(manifest.host_permissions) !== JSON.stringify(expectedHosts)
+) {
+  errors.push("host permissions must match the three approved search hosts");
 }
 
-if ("content_scripts" in manifest) {
-  errors.push("content scripts must be omitted for the shell");
+if ("optional_host_permissions" in manifest) {
+  errors.push("optional host permissions must be omitted");
+}
+
+const [searchScript] = manifest.content_scripts ?? [];
+if (
+  manifest.content_scripts?.length !== 1 ||
+  JSON.stringify(searchScript.matches) !==
+    JSON.stringify([
+      "https://www.google.com/search*",
+      "https://www.bing.com/search*",
+      "https://duckduckgo.com/*",
+    ]) ||
+  JSON.stringify(searchScript.include_globs) !==
+    JSON.stringify([
+      "https://duckduckgo.com/?*",
+      "https://duckduckgo.com/html/*",
+      "https://www.google.com/search*",
+      "https://www.bing.com/search*",
+    ]) ||
+  searchScript.run_at !== "document_idle" ||
+  searchScript.all_frames !== false
+) {
+  errors.push("content scripts must remain scoped to approved top-frame search pages");
 }
 
 for (const file of referencedFiles) {

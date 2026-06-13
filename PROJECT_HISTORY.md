@@ -1,5 +1,15 @@
 # Project History
 
+## 2026-06-13 - Search exposure parsers
+
+- Added scoped parsers for Google, Bing, and DuckDuckGo result pages.
+- Captures redacted queries and recognized organic result rank/title metadata.
+- Stores destination hostname/hash only; no snippets, full URLs, or raw DOM.
+- Added inferred clicks and parser errors with allowlisted safe metadata.
+- Added exact host permissions and no broad scripting or tab permission.
+- Added synthetic fixtures and parser/privacy tests using dev-only linkedom.
+- Next: validate selectors manually before considering additional search hosts.
+
 ## 2026-06-13 - Ambient navigation telemetry
 
 - Added consent-gated top-frame navigation, tab, and window event handling.

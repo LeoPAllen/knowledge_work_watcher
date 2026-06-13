@@ -19,8 +19,8 @@
 - Broad DOM snapshots, page text, screenshots, or browsing history imports
 - Real participant data in source control, fixtures, logs, or examples
 
-Optional text capture is prohibited for the MVP unless a later reviewed change
-explicitly permits it for named fields and domains.
+Only search query and recognized result-title text are permitted on named search
+domains by this reviewed prototype change. Other text capture is prohibited.
 
 ## Security Expectations
 
@@ -46,9 +46,8 @@ explicitly permits it for named fields and domains.
 - Every observed navigation URL must pass the shared privacy filter.
 - Denylisted and sensitive rules override default and custom allowlists.
 - Invalid, unknown, and unsupported URLs fail closed.
-- Local files, browser/extension pages, login/account surfaces, private
-  networks, webmail, private documents, finance, health, and adult domains are
-  blocked.
+- Local/browser pages, login/account surfaces, private networks, webmail,
+  private documents, finance, health, and adult domains are blocked.
 - Local/private network URLs require both debug mode and an explicit debug
   override; sensitive paths remain blocked.
 - Classification returns policy metadata only and does not log or persist URLs.
@@ -56,7 +55,13 @@ explicitly permits it for named fields and domains.
   identify every sensitive service.
 - Allowed records store hostname and a SHA-256 of scheme/host/path only.
 - Denied, private, invalid, and unknown records omit all page identity.
-- Titles are never requested or stored.
+- Navigation titles are never requested or stored.
+- Search parsing is limited to named result selectors on Google, Bing, and
+  DuckDuckGo; it never reads input fields, snippets, profiles, or raw DOM.
+- Queries containing email, phone, or obvious secret patterns are stored as
+  null with a redaction category.
+- Search destinations are reduced to hostname and URL hash after filtering.
+- Current parsers omit recognized ads rather than storing them.
 
 ## Consent Status
 
@@ -69,7 +74,7 @@ explicitly permits it for named fields and domains.
 
 - `TODO(IRB)`: participant consent language and withdrawal procedure.
 - `TODO(IRB)`: approved retention and deletion periods.
-- `TODO(IRB)`: whether any text-bearing fields may be collected.
+- `TODO(IRB)`: approve search query and result-title collection for study use.
 - `TODO(Security)`: local encryption and key-management design.
 - `TODO(Security)`: backend authentication, transport, and access controls.
 - `TODO(Security)`: DNS rebinding/resolution safeguards before any host access.

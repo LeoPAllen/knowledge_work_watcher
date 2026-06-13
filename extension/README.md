@@ -1,10 +1,10 @@
 # Extension Shell
 
-This directory contains a dependency-free Chrome Manifest V3 extension. It has
-no host permissions, content scripts, page-text capture, or network behavior.
-The `storage` permission supports a bounded local queue. The `webNavigation`
-permission supplies committed top-frame URLs, which are filtered and minimized
-before local storage.
+This directory contains a runtime dependency-free Chrome Manifest V3 extension.
+It has no broad page-text capture or network behavior. Narrow content scripts
+parse recognized result elements on Google, Bing, and DuckDuckGo. The `storage`
+permission supports a bounded local queue; `webNavigation` supplies committed
+top-frame URLs.
 
 ## Load Unpacked
 
@@ -20,8 +20,10 @@ section can create synthetic events only when local debug mode is enabled, and
 can always count, export, or clear the queue.
 
 When capture is active, allowlisted top-frame navigation plus related tab/window
-signals are queued locally. Raw URLs, queries, fragments, titles, and denied
-page details are not stored. Nothing is transmitted.
+signals are queued locally. Supported search pages may also queue a redacted
+query, result rank/title/type, and destination hostname/hash. Snippets, raw
+URLs, DOM, account data, and denied destination details are not stored.
+Nothing is transmitted.
 
 ## Manual Privacy Check
 
@@ -33,12 +35,15 @@ page details are not stored. Nothing is transmitted.
 5. Export local logs from options.
 6. Verify the allowed record has a hostname and URL hash but no raw URL/title.
 7. Verify the denied record is only `capture_skipped` policy metadata.
+8. Search a synthetic phrase on Google, Bing, or DuckDuckGo.
+9. Export again and verify search events contain no snippets or full URLs.
 
 ## Checks
 
 From the repository root:
 
 ```sh
-node extension/scripts/check-manifest.mjs
-node --test extension/tests/*.test.mjs
+npm install
+npm run check:manifest
+npm test
 ```

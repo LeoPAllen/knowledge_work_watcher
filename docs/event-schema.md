@@ -1,7 +1,7 @@
 # Event Schema
 
-Schema version 1 supports local control events and minimized ambient navigation
-telemetry. It does not support page text, search queries, or LLM content.
+Schema version 1 supports local control events, minimized navigation telemetry,
+and scoped search exposure. It does not support snippets or LLM content.
 
 ## Common Envelope
 
@@ -18,8 +18,8 @@ telemetry. It does not support page text, search queries, or LLM content.
 | `source` | Extension component, including `telemetry` |
 | `payload` | Strict event-specific object |
 
-Raw participant IDs, URLs, titles, cookies, tokens, passwords, query strings,
-and arbitrary DOM/page content are not valid schema fields.
+Raw participant IDs, full URLs, cookies, tokens, passwords, snippets, and
+arbitrary DOM/page content are not valid schema fields.
 
 ## Version 1 Event Types
 
@@ -34,6 +34,10 @@ and arbitrary DOM/page content are not valid schema fields.
 - `navigation_committed`: allowed context plus transition metadata
 - `window_focus_changed`: allowed context plus focused state
 - `capture_skipped`: signal and policy reason only; no page identity
+- `search_query_observed`: engine, URL hash, and redacted-or-null query
+- `search_results_exposed`: up to 20 minimized result records
+- `search_result_clicked`: inferred rank and minimized destination
+- `parser_error`: allowlisted error code and parser metadata only
 
 Currently produced events are:
 
@@ -47,6 +51,10 @@ Allowed page context contains only SHA-256 URL hash, hostname, session-local
 tab/window pseudonyms, and browser timestamp. The hash input is scheme, host,
 port, and path; query and fragment are excluded. Navigation may also contain
 Chrome transition type and qualifiers.
+
+Search result records contain rank, title, destination hostname/hash, and a
+conservative result type. Ads are omitted by current parsers. Query and title
+text are approved only for this prototype scope; `TODO(IRB)` before study use.
 
 ## Local Queue
 

@@ -10,10 +10,11 @@ allowlist-first domain policy.
 ## Status
 
 This repository contains a dependency-free Chrome Manifest V3 extension and
-project documentation. It records minimized navigation, tab, and window events
-locally only after consent and only for allowlisted pages. It has no content
-scripts, page-text capture, host permissions, upload, backend, or research ETL.
-Only synthetic or demo data may be used during development.
+project documentation. It records minimized navigation and search-result
+exposure locally only after consent and only for explicitly supported pages.
+Search content scripts are limited to Google, Bing, and DuckDuckGo result pages.
+It has no broad page capture, upload, backend, or research ETL. Only synthetic
+or demo data may be used during development.
 
 ## MVP Direction
 
@@ -48,6 +49,6 @@ decision. Real participant data must never be committed.
 
 ## Development
 
-See [extension/README.md](extension/README.md) for unpacked-loading and manifest
-and test instructions. See [AGENTS.md](AGENTS.md) for repository rules. No
-dependencies are required at this stage.
+See [extension/README.md](extension/README.md) for unpacked-loading and test
+instructions. See [AGENTS.md](AGENTS.md) for repository rules. Runtime code has
+no dependencies; `linkedom` is used only for synthetic parser fixture tests.
