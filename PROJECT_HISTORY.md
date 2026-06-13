@@ -1,5 +1,16 @@
 # Project History
 
+## 2026-06-13 - Consent and ambient controls
+
+- Added persistent participant, server, allowlist, consent, and debug settings.
+- Hashes participant IDs before storage and never redisplays the raw value.
+- Requires explicit placeholder consent before ambient state can be enabled.
+- Added visible active, paused, and off states in popup and options controls.
+- Queues consent, pause, resume, and configuration metadata locally.
+- Consent revocation stops ambient state before attempting event logging.
+- Added tests for defaults, gating, transitions, persistence, and hashing.
+- Next: enforce allowlists before adding any browsing event adapters.
+
 ## 2026-06-13 - Typed events and local queue
 
 - Added schema version 1 for extension-state and synthetic test events.

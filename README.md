@@ -11,9 +11,9 @@ allowlist-first domain policy.
 
 This repository contains a minimal Chrome Manifest V3 extension shell and
 project documentation. It includes a versioned internal event schema and a
-bounded local queue for extension metadata and synthetic test events. It has no
-browsing capture, host permissions, content scripts, backend integration, or
-research ETL. Only synthetic or demo data may be used during development.
+bounded local queue plus consent-gated ambient control state. It has no browsing
+capture, host permissions, content scripts, backend integration, or research
+ETL. Only synthetic or demo data may be used during development.
 
 ## MVP Direction
 

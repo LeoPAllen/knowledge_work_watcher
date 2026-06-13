@@ -4,6 +4,8 @@
 
 - Capture is off until consent is recorded.
 - Pause/resume state is continuously visible and user-controlled.
+- Ambient state cannot be enabled before explicit placeholder consent.
+- Revoking consent locally disables ambient state and clears its session.
 - Domains are denied unless explicitly allowlisted.
 - Events are minimized before entering a local queue.
 - The local queue is bounded at 500 validated events.
@@ -35,6 +37,15 @@ explicitly permits it for named fields and domains.
 - Debug events are explicitly synthetic and contain no participant identifier.
 - JSON export creates a user-managed local file outside extension storage.
 - Raw participant IDs must not enter events, logs, or exports.
+- Participant IDs are hashed in the options page before storage or messaging.
+- Study server URL and allowlist settings remain local and are not operational.
+
+## Consent Status
+
+- Current consent copy is a development placeholder.
+- `TODO(IRB)`: replace it with approved consent language before study use.
+- The interface does not claim IRB approval.
+- An active control state does not currently cause browsing capture.
 
 ## Deferred Decisions
 

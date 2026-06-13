@@ -30,9 +30,15 @@ content are not valid schema fields.
 - `config_changed`: names of changed configuration fields, not values
 - `queue_test_event`: marker requiring `synthetic: true`
 
-Only `extension_installed` and user-created `queue_test_event` records are
-currently produced. Consent, capture, and configuration behavior remains
-unimplemented.
+Currently produced events are:
+
+- `extension_installed` on extension installation or update
+- `consent_changed` on local acceptance or revocation
+- `capture_paused` and `capture_resumed` on explicit user actions
+- `config_changed` with changed field names only, never values
+- `queue_test_event` when local-only debug mode is enabled
+
+Ambient enable/disable state is persisted but does not produce browsing events.
 
 ## Local Queue
 

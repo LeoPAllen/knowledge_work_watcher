@@ -2,17 +2,17 @@
 
 ## Current State
 
-A minimal extension shell exists under `extension/`. It includes a Manifest V3
-service worker, popup, and options page, but no telemetry, persistence,
-permissions, content scripts, backend, or ETL.
+A minimal extension exists under `extension/`. It includes a Manifest V3 state
+controller, popup, options page, and local control/event persistence. It has no
+browsing telemetry, host permissions, content scripts, backend, or ETL.
 
 ## Extension Layout
 
-- `extension/manifest.json`: zero-permission MV3 declaration
-- `extension/src/background/`: inert service worker
+- `extension/manifest.json`: storage-only MV3 declaration
+- `extension/src/background/`: local state controller service worker
 - `extension/src/popup/`: capture-status popup
-- `extension/src/options/`: disabled configuration placeholders
-- `extension/src/shared/`: shared presentation styles
+- `extension/src/options/`: local consent, configuration, and debug controls
+- `extension/src/shared/`: state, schema, queue, storage, and shared styles
 - `extension/scripts/`: dependency-free policy checks
 
 ## Planned Components

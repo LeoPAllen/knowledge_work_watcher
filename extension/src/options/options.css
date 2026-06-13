@@ -39,6 +39,26 @@ label {
   margin-top: 8px;
 }
 
+.field-note {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+.field-meta {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin: -4px 0 4px;
+}
+
+button.text-button {
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  padding: 2px 0;
+}
+
 input,
 textarea {
   background: var(--surface);
@@ -73,6 +93,8 @@ textarea {
   padding: 14px 16px;
 }
 
+.consent-panel,
+.capture-panel,
 .debug-panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -81,14 +103,24 @@ textarea {
   padding: 24px;
 }
 
+.consent-panel h2,
+.capture-panel h2,
 .debug-panel h2 {
   font-size: 20px;
   margin: 0;
 }
 
+.consent-panel > p:not(.eyebrow),
+.capture-panel > p:not(.eyebrow),
 .debug-panel > p:not(.eyebrow, .queue-count, .debug-status) {
   color: var(--muted);
   line-height: 1.5;
+}
+
+.control-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .queue-count {
@@ -110,6 +142,12 @@ button.danger {
 }
 
 .debug-status {
+  color: var(--muted);
+  font-size: 13px;
+  min-height: 20px;
+}
+
+.page-status {
   color: var(--muted);
   font-size: 13px;
   min-height: 20px;
