@@ -1,7 +1,7 @@
 # Data Inventory
 
-This inventory separates implemented local control data from deferred browsing
-telemetry. All development records must be synthetic or demo data.
+This inventory covers implemented extension and ingestion data. Development
+records must be synthetic or demo data.
 
 ## Implemented Local Data
 
@@ -31,6 +31,8 @@ telemetry. All development records must be synthetic or demo data.
 | Public repository | Owner/repo, path, issue/PR number | Explicit public marker required |
 | Docs/reference | Title and up to 20 headings | No article/README body |
 | Queue | Validated control/telemetry events | Local export and clearing |
+| Raw ingestion | Validated event JSON | Append-only local SQLite |
+| Server metadata | Receive time and request ID | Operations and tracing |
 
 Raw participant IDs are hashed before storage and are not redisplayed.
 
@@ -47,7 +49,7 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 - Broad DOM or page-text capture
 - Private, intranet, localhost, file, and non-allowlisted domains
 - Real participant records in the repository
-- Network transmission or backend records
+- Extension network transmission; upload is not implemented
 - Raw URLs, query strings, fragments, credentials, and navigation titles
 - Search snippets, ads, arbitrary page text, and raw DOM
 - LLM response text, profile fields, uploads, attachments, and prompt inputs
@@ -56,7 +58,7 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 
 ## Deferred
 
-- Backend identifiers, upload receipts, and server logs
+- Upload receipts and production operational logs
 - Research ETL outputs and episode-level derived tables
 - `TODO(IRB)`: retention, deletion, participant identifiers, and approved text
   fields

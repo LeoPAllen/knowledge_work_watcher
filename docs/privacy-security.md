@@ -8,7 +8,7 @@
 - Domains are denied unless explicitly allowlisted.
 - Events are minimized before entering a local queue.
 - The local queue is bounded at 500 validated events.
-- Backend upload is not implemented.
+- Extension upload is not implemented.
 - Navigation capture requires active consent, ambient mode, and an allowed URL.
 
 ## Prohibited Capture
@@ -24,15 +24,16 @@ domains. LLM response text and all other page text remain prohibited.
 - Request the narrowest Chrome permissions and host patterns possible.
 - Validate event shape and domain eligibility at collection and persistence.
 - Prevent sensitive values from entering logs or error reports.
-- Review changes to permissions, collection, retention, and transport manually.
+- Require bearer authentication and bounded request bodies for ingestion.
+- Keep tokens in environment variables and event bodies out of default logs.
 
 ## Local Storage and Export
 - The queue uses `chrome.storage.local`; it is local but not application-level
   encrypted and must still be treated as sensitive.
-- Debug events are explicitly synthetic and contain no participant identifier.
-- JSON export creates a user-managed local file outside extension storage.
 - Raw participant IDs must not enter events, logs, or exports.
 - Participant IDs are hashed in the options page before storage or messaging.
+- Accepted backend events are append-only in local, unencrypted SQLite.
+- Server rows add receive time and request ID; no event query API exists.
 
 ## URL Policy
 - Every observed navigation URL must pass the shared privacy filter.
@@ -53,7 +54,6 @@ domains. LLM response text and all other page text remain prohibited.
   null with a redaction category.
 - Search destinations are reduced to hostname and URL hash after filtering.
 - LLM scripts are limited to ChatGPT, Claude, Gemini, Perplexity, and Copilot.
-- Prompt parsing uses named text descendants, not inputs or whole containers.
 - Prompts and model labels use email, phone, and secret redaction.
 - Assistant containers expose link URLs only; response text is never read.
 - Upload, attachment, download, profile, and account elements are excluded.
@@ -62,7 +62,6 @@ domains. LLM response text and all other page text remain prohibited.
   Q&A bodies, code, README/article text, and comments are never read.
 - GitHub requires a valid repository route and public marker; private,
   ambiguous, profile, settings, and unsupported routes skip.
-- Deny/private URL rules run again in the background before queueing.
 
 ## Consent Status
 - Current consent copy is a development placeholder.
@@ -77,4 +76,5 @@ domains. LLM response text and all other page text remain prohibited.
 - `TODO(IRB)`: approve knowledge-page titles/headings for study use.
 - `TODO(Security)`: local encryption and key-management design.
 - `TODO(Security)`: backend authentication, transport, and access controls.
+- `TODO(Security)`: replace the shared study token before deployment.
 - `TODO(Security)`: DNS rebinding/resolution safeguards before any host access.

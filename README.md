@@ -9,11 +9,11 @@ allowlist-first domain policy.
 
 ## Status
 
-This repository contains a dependency-free Chrome Manifest V3 extension and
-project documentation. It records minimized navigation, search exposure, and
-metadata-first LLM and knowledge-site interactions locally only after consent.
-Content scripts are limited to named search, LLM, and knowledge sites. It has no
-LLM response-text capture, broad page capture, upload, backend, or research ETL.
+This repository contains a Chrome Manifest V3 extension, a local MVP ingestion
+API, and project documentation. The extension records minimized navigation,
+search, LLM, and knowledge-site events locally after consent. The Fastify API
+validates schema version 1 events and appends them to SQLite. Extension upload,
+LLM response-text capture, broad page capture, and research ETL remain absent.
 Only synthetic or demo data may be used during development.
 
 ## MVP Direction
@@ -50,5 +50,6 @@ decision. Real participant data must never be committed.
 ## Development
 
 See [extension/README.md](extension/README.md) for unpacked-loading and test
-instructions. See [AGENTS.md](AGENTS.md) for repository rules. Runtime code has
-no dependencies; `linkedom` is used only for synthetic parser fixture tests.
+instructions and [backend/README.md](backend/README.md) for API setup. Run
+`npm test` for all tests and `npm run backend:start` for the configured API.
+See [AGENTS.md](AGENTS.md) for repository rules.
