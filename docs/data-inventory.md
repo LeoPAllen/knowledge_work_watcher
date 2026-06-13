@@ -11,8 +11,9 @@ telemetry. All development records must be synthetic or demo data.
 | Study server | URL string | Placeholder only; no requests are made |
 | Consent | Accepted/not accepted | Gates ambient control state |
 | Capture | Enabled, paused, session ID | Visible local control state |
-| Allowlist | Domain strings | Placeholder; no adapters use it yet |
+| Allowlist | Domain strings | Custom privacy-filter inputs; no adapters yet |
 | Debug | Local-only flag | Gates synthetic test event creation |
+| Domain policy | Static allow/deny configuration | Classifies without storing URLs |
 | Queue | Validated control/test events | Local export and clearing |
 
 Raw participant IDs are hashed before storage and are not redisplayed.
@@ -36,6 +37,7 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 - Private, intranet, localhost, file, and non-allowlisted domains
 - Real participant records in the repository
 - Network transmission or backend records
+- URL classification results or input URLs in the event queue
 
 ## Deferred
 
