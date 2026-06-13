@@ -3,9 +3,9 @@
 ## Purpose
 
 Knowledge Work Watcher is an ambient, privacy-preserving research browser
-extension for reconstructing knowledge-work episodes. The planned client is a
-Chrome Manifest V3 extension. Telemetry, backend ingestion, and ETL are not yet
-implemented.
+extension for reconstructing knowledge-work episodes. The Chrome Manifest V3
+client has local navigation and scoped search telemetry. Backend ingestion and
+ETL are not implemented.
 
 ## File Map
 

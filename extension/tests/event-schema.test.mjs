@@ -68,6 +68,56 @@ test("creates each supported event type", () => {
       reason: "denied_domain",
       category: "webmail",
     },
+    search_query_observed: {
+      page_url_hash: "a".repeat(64),
+      search_hostname: "www.google.com",
+      tab_id: `tab_${"b".repeat(64)}`,
+      window_id: `window_${"c".repeat(64)}`,
+      browser_timestamp: 1,
+      search_engine: "google",
+      query: "synthetic research",
+      query_redacted: false,
+      redaction_reason: null,
+    },
+    search_results_exposed: {
+      page_url_hash: "a".repeat(64),
+      search_hostname: "www.google.com",
+      tab_id: `tab_${"b".repeat(64)}`,
+      window_id: `window_${"c".repeat(64)}`,
+      browser_timestamp: 1,
+      search_engine: "google",
+      results: [
+        {
+          rank: 1,
+          title: "Synthetic result",
+          destination_hostname: "example.test",
+          destination_url_hash: "d".repeat(64),
+          result_type: "organic",
+        },
+      ],
+    },
+    search_result_clicked: {
+      page_url_hash: "a".repeat(64),
+      search_hostname: "www.google.com",
+      tab_id: `tab_${"b".repeat(64)}`,
+      window_id: `window_${"c".repeat(64)}`,
+      browser_timestamp: 1,
+      search_engine: "google",
+      clicked_rank: 1,
+      destination_hostname: "example.test",
+      destination_url_hash: "d".repeat(64),
+    },
+    parser_error: {
+      page_url_hash: "a".repeat(64),
+      search_hostname: "www.google.com",
+      tab_id: `tab_${"b".repeat(64)}`,
+      window_id: `window_${"c".repeat(64)}`,
+      browser_timestamp: 1,
+      search_engine: "google",
+      parser_stage: "parse",
+      error_code: "results_root_missing",
+      parser_version: 1,
+    },
   };
 
   for (const eventType of EVENT_TYPES) {
@@ -163,6 +213,33 @@ test("rejects unexpected fields and invalid payloads", () => {
           window_id: `window_${"c".repeat(64)}`,
           browser_timestamp: 1,
           title: "must not be accepted",
+        },
+      }),
+    /Invalid event/,
+  );
+
+  assert.throws(
+    () =>
+      createEvent({
+        ...baseInput,
+        eventType: "search_results_exposed",
+        payload: {
+          page_url_hash: "a".repeat(64),
+          search_hostname: "www.google.com",
+          tab_id: `tab_${"b".repeat(64)}`,
+          window_id: `window_${"c".repeat(64)}`,
+          browser_timestamp: 1,
+          search_engine: "google",
+          results: [
+            {
+              rank: 1,
+              title: "Synthetic result",
+              destination_hostname: "example.test",
+              destination_url_hash: "d".repeat(64),
+              result_type: "organic",
+              snippet: "must not be accepted",
+            },
+          ],
         },
       }),
     /Invalid event/,

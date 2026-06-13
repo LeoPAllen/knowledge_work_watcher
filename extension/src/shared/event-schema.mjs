@@ -13,6 +13,10 @@ export const EVENT_TYPES = Object.freeze([
   "navigation_committed",
   "window_focus_changed",
   "capture_skipped",
+  "search_query_observed",
+  "search_results_exposed",
+  "search_result_clicked",
+  "parser_error",
 ]);
 
 export const CAPTURE_MODES = Object.freeze(["off", "paused", "ambient"]);
@@ -23,6 +27,7 @@ const SOURCES = new Set([
   "popup",
   "debug",
   "telemetry",
+  "search_parser",
 ]);
 const CONFIG_FIELDS = new Set([
   "participant_id_hash",
@@ -102,9 +107,21 @@ function isBrowserPseudonym(value, kind) {
   );
 }
 
+const SEARCH_ENGINES = new Set(["google", "bing", "duckduckgo"]);
+const RESULT_TYPES = new Set(["organic", "ad", "ai", "other", "unknown"]);
+const REDACTION_REASONS = new Set(["email", "phone", "secret", "missing"]);
+
 const PAGE_CONTEXT_FIELDS = new Set([
   "url_hash",
   "hostname",
+  "tab_id",
+  "window_id",
+  "browser_timestamp",
+]);
+
+const SEARCH_CONTEXT_FIELDS = new Set([
+  "page_url_hash",
+  "search_hostname",
   "tab_id",
   "window_id",
   "browser_timestamp",
@@ -119,6 +136,42 @@ function validatePageContext(payload, extraFields = new Set()) {
     isBrowserPseudonym(payload.tab_id, "tab") &&
     isBrowserPseudonym(payload.window_id, "window") &&
     isFiniteTimestamp(payload.browser_timestamp)
+  );
+}
+
+function validateSearchContext(payload, extraFields = new Set()) {
+  const allowedFields = new Set([...SEARCH_CONTEXT_FIELDS, ...extraFields]);
+  return (
+    hasOnlyFields(payload, allowedFields) &&
+    isSha256(payload.page_url_hash) &&
+    isHostname(payload.search_hostname) &&
+    isBrowserPseudonym(payload.tab_id, "tab") &&
+    isBrowserPseudonym(payload.window_id, "window") &&
+    isFiniteTimestamp(payload.browser_timestamp) &&
+    SEARCH_ENGINES.has(payload.search_engine)
+  );
+}
+
+function validateSearchResult(result) {
+  return (
+    isPlainObject(result) &&
+    hasOnlyFields(
+      result,
+      new Set([
+        "rank",
+        "title",
+        "destination_hostname",
+        "destination_url_hash",
+        "result_type",
+      ]),
+    ) &&
+    Number.isInteger(result.rank) &&
+    result.rank > 0 &&
+    isNonEmptyString(result.title) &&
+    result.title.length <= 300 &&
+    isHostname(result.destination_hostname) &&
+    isSha256(result.destination_url_hash) &&
+    RESULT_TYPES.has(result.result_type)
   );
 }
 
@@ -192,6 +245,74 @@ function validatePayload(eventType, payload) {
         ].includes(payload.classification) &&
         isNonEmptyString(payload.reason) &&
         isNullableString(payload.category)
+      );
+    case "search_query_observed":
+      return (
+        validateSearchContext(
+          payload,
+          new Set([
+            "search_engine",
+            "query",
+            "query_redacted",
+            "redaction_reason",
+          ]),
+        ) &&
+        (payload.query === null ||
+          (isNonEmptyString(payload.query) && payload.query.length <= 500)) &&
+        typeof payload.query_redacted === "boolean" &&
+        (payload.redaction_reason === null ||
+          REDACTION_REASONS.has(payload.redaction_reason)) &&
+        (payload.query_redacted
+          ? payload.query === null &&
+            ["email", "phone", "secret"].includes(payload.redaction_reason)
+          : payload.query === null
+            ? payload.redaction_reason === "missing"
+            : payload.redaction_reason === null)
+      );
+    case "search_results_exposed":
+      return (
+        validateSearchContext(
+          payload,
+          new Set(["search_engine", "results"]),
+        ) &&
+        Array.isArray(payload.results) &&
+        payload.results.length <= 20 &&
+        payload.results.every(validateSearchResult)
+      );
+    case "search_result_clicked":
+      return (
+        validateSearchContext(
+          payload,
+          new Set([
+            "search_engine",
+            "clicked_rank",
+            "destination_hostname",
+            "destination_url_hash",
+          ]),
+        ) &&
+        Number.isInteger(payload.clicked_rank) &&
+        payload.clicked_rank > 0 &&
+        isHostname(payload.destination_hostname) &&
+        isSha256(payload.destination_url_hash)
+      );
+    case "parser_error":
+      return (
+        validateSearchContext(
+          payload,
+          new Set([
+            "search_engine",
+            "parser_stage",
+            "error_code",
+            "parser_version",
+          ]),
+        ) &&
+        payload.parser_stage === "parse" &&
+        [
+          "unsupported_search_page",
+          "results_root_missing",
+          "parse_failed",
+        ].includes(payload.error_code) &&
+        payload.parser_version === 1
       );
     default:
       return false;

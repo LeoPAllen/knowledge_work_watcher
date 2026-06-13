@@ -18,6 +18,10 @@ telemetry. All development records must be synthetic or demo data.
 | Browser context | Session-local tab/window IDs | Relates allowed local events |
 | Transition | Type, qualifiers, timestamps, status | Reconstructs navigation flow |
 | Skips | Signal and policy reason/category | No URL, hostname, title, or IDs |
+| Search query | Redacted query or null, engine | Supported search pages only |
+| Search exposure | Rank, title, destination hostname/hash, type | Up to 20 recognized organic results |
+| Search click | Rank and destination hostname/hash | Recognized result anchors only |
+| Parser error | Engine, code, version, page hash | No exception or DOM text |
 | Queue | Validated control/telemetry events | Local export and clearing |
 
 Raw participant IDs are hashed before storage and are not redisplayed.
@@ -26,7 +30,6 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 
 | Category | Future intent | Minimization |
 | --- | --- | --- |
-| Search | Query metadata and exposed results | Allowlisted adapters; minimal result rank/link metadata |
 | LLM | Prompt/response metadata | Metadata by default; text capture is not approved |
 | LLM sources | Exposed source links when available | Normalize links; exclude unrelated page content |
 | Downstream use | Navigation after search/LLM exposure | Link through local event IDs |
@@ -39,7 +42,8 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 - Private, intranet, localhost, file, and non-allowlisted domains
 - Real participant records in the repository
 - Network transmission or backend records
-- Raw URLs, query strings, fragments, credentials, and page titles
+- Raw URLs, query strings, fragments, credentials, and navigation titles
+- Search snippets, ads, arbitrary page text, and raw DOM
 
 ## Deferred
 
@@ -47,3 +51,4 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 - Research ETL outputs and episode-level derived tables
 - `TODO(IRB)`: retention, deletion, participant identifiers, and approved text
   fields
+- `TODO(IRB)`: approve search query and result-title fields before study use

@@ -1,0 +1,11 @@
+{
+  "name": "knowledge-work-watcher",
+  "private": true,
+  "scripts": {
+    "check:manifest": "node extension/scripts/check-manifest.mjs",
+    "test": "node --test extension/tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "linkedom": "^0.18.12"
+  }
+}

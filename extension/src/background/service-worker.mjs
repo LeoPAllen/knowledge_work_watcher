@@ -4,6 +4,7 @@ import { createChromeStorageAdapter } from "../shared/storage.mjs";
 import { createChromeStateStorage } from "../shared/config-storage.mjs";
 import { createCaptureStateController } from "../shared/capture-state.mjs";
 import { createNavigationTelemetry } from "./navigation-telemetry.mjs";
+import { createSearchTelemetry } from "./search-telemetry.mjs";
 
 const queue = createLocalQueue(createChromeStorageAdapter());
 const extensionVersion = chrome.runtime.getManifest().version;
@@ -17,6 +18,11 @@ const telemetry = createNavigationTelemetry({
   queue,
   extensionVersion,
   getWindowId: async (tabId) => (await chrome.tabs.get(tabId)).windowId,
+});
+const searchTelemetry = createSearchTelemetry({
+  stateController: controller,
+  queue,
+  extensionVersion,
 });
 
 function runTelemetry(handler) {
@@ -65,6 +71,31 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  const searchActions = {
+    get_capture_gate: async () => ({
+      active: await searchTelemetry.isCaptureActive(),
+    }),
+    search_page_parsed: async () => {
+      await searchTelemetry.onPageParsed(message.parsed, sender);
+      return {};
+    },
+    search_result_clicked: async () => {
+      await searchTelemetry.onResultClicked(message.clicked, sender);
+      return {};
+    },
+    search_parser_error: async () => {
+      await searchTelemetry.onParserError(message, sender);
+      return {};
+    },
+  };
+  const searchAction = searchActions[message?.type];
+  if (searchAction) {
+    searchAction()
+      .then((result) => sendResponse({ ok: true, ...result }))
+      .catch(() => sendResponse({ ok: false }));
+    return true;
+  }
+
   const source = sender.url?.includes("/popup/") ? "popup" : "options";
   const actions = {
     get_state: () => controller.getState(),

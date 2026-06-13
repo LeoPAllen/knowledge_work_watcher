@@ -2,10 +2,36 @@
   "manifest_version": 3,
   "name": "Knowledge Work Watcher",
   "version": "0.1.0",
-  "description": "Privacy-preserving research extension with local, consent-gated navigation telemetry.",
+  "description": "Privacy-preserving research extension with local, consent-gated navigation and search telemetry.",
   "permissions": [
     "storage",
     "webNavigation"
+  ],
+  "host_permissions": [
+    "https://www.google.com/*",
+    "https://www.bing.com/*",
+    "https://duckduckgo.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.google.com/search*",
+        "https://www.bing.com/search*",
+        "https://duckduckgo.com/*"
+      ],
+      "include_globs": [
+        "https://duckduckgo.com/?*",
+        "https://duckduckgo.com/html/*",
+        "https://www.google.com/search*",
+        "https://www.bing.com/search*"
+      ],
+      "js": [
+        "src/search/search-parser.js",
+        "src/search/search-content-script.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
   ],
   "action": {
     "default_popup": "src/popup/popup.html",
