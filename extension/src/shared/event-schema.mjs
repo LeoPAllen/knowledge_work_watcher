@@ -43,6 +43,8 @@ const SOURCES = new Set([
 const CONFIG_FIELDS = new Set([
   "participant_id_hash",
   "study_server_url",
+  "study_auth_token",
+  "upload_enabled",
   "allowlist",
   "debug_mode",
 ]);

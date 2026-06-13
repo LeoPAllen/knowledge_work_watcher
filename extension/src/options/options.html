@@ -13,8 +13,8 @@
         <p class="eyebrow">Local study controls</p>
         <h1>Knowledge Work Watcher</h1>
         <p class="intro">
-          Configuration stays in extension storage. No browsing data is
-          captured and nothing is transmitted to the study server.
+          Configuration and queued events stay local unless consent, active
+          ambient capture, and upload are all enabled.
         </p>
       </header>
 
@@ -42,7 +42,31 @@
           </div>
 
           <label for="server-url">Study server URL</label>
-          <input id="server-url" type="url" placeholder="Not configured">
+          <input id="server-url" type="url" placeholder="https://study.example">
+
+          <label for="auth-token">Study token</label>
+          <input
+            id="auth-token"
+            type="password"
+            autocomplete="new-password"
+            placeholder="Enter to configure or replace"
+          >
+          <div class="field-meta">
+            <p id="auth-token-status" class="field-note">Not configured</p>
+            <button
+              id="clear-auth-token"
+              class="text-button"
+              type="button"
+              disabled
+            >
+              Clear study token
+            </button>
+          </div>
+
+          <label class="checkbox-row" for="upload-enabled">
+            <input id="upload-enabled" type="checkbox" disabled>
+            Enable authenticated event upload
+          </label>
 
           <label for="allowlist">Allowlist configuration placeholder</label>
           <textarea
@@ -82,8 +106,7 @@
         <p class="eyebrow">Ambient mode</p>
         <h2 id="capture-heading">Capture controls</h2>
         <p>
-          Control state only. Browsing telemetry and content scripts do not
-          exist.
+          Capture and upload stop while paused or after consent is revoked.
         </p>
         <p>Capture status: <strong id="capture-status">Loading...</strong></p>
         <label class="checkbox-row" for="ambient-enabled">
@@ -93,16 +116,30 @@
         <button id="pause-resume" class="secondary" type="button" hidden></button>
       </section>
 
+      <section class="upload-panel" aria-labelledby="upload-heading">
+        <p class="eyebrow">Authenticated sync</p>
+        <h2 id="upload-heading">Upload status</h2>
+        <p>
+          Upload uses minimized queued events only. Failed requests preserve
+          the queue and retry with bounded backoff.
+        </p>
+        <p>Upload status: <strong id="upload-status">Loading...</strong></p>
+        <button id="sync-now" type="button" disabled>Sync now</button>
+      </section>
+
       <section class="debug-panel" aria-labelledby="debug-heading">
-        <p class="eyebrow">Local development only</p>
+        <p class="eyebrow">Local storage</p>
         <h2 id="debug-heading">Event queue</h2>
         <p>
-          Create and inspect synthetic metadata events. No browsing activity,
-          page content, or participant identifier is included. Synthetic event
-          creation requires local-only debug mode.
+          Inspect, export, or clear minimized queued telemetry. Synthetic event
+          creation requires local-only debug mode; exports may contain approved
+          research fields and must be handled as sensitive.
         </p>
         <p class="queue-count" aria-live="polite">
           Queued events: <strong id="queue-count">Loading...</strong>
+        </p>
+        <p class="queue-count" aria-live="polite">
+          Rejected records: <strong id="dead-letter-count">Loading...</strong>
         </p>
         <div class="debug-actions">
           <button id="create-test-event" type="button" disabled>
@@ -113,6 +150,12 @@
           </button>
           <button id="clear-events" class="danger" type="button">
             Clear queue
+          </button>
+          <button id="export-dead-letters" class="secondary" type="button">
+            Export rejections
+          </button>
+          <button id="clear-dead-letters" class="danger" type="button">
+            Clear rejections
           </button>
         </div>
         <p id="debug-status" class="debug-status" role="status"></p>

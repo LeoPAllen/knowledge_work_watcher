@@ -17,7 +17,10 @@ function validateStoredEvents(events) {
   return events;
 }
 
-export function createLocalQueue(storage, { limit = DEFAULT_QUEUE_LIMIT } = {}) {
+export function createLocalQueue(
+  storage,
+  { limit = DEFAULT_QUEUE_LIMIT, deadLetterStorage = null } = {},
+) {
   if (!storage || typeof storage.read !== "function" || typeof storage.write !== "function") {
     throw new TypeError("storage must provide read and write functions");
   }
@@ -62,6 +65,71 @@ export function createLocalQueue(storage, { limit = DEFAULT_QUEUE_LIMIT } = {}) 
     async clear() {
       return runExclusive(async () => {
         await storage.write([]);
+      });
+    },
+
+    async settle({ removeEventIds = [], deadLetters = [] }) {
+      return runExclusive(async () => {
+        const events = validateStoredEvents(await storage.read());
+        const removeIds = new Set(removeEventIds);
+        const currentIds = new Set(events.map((event) => event.event_id));
+        if (
+          removeIds.size !== removeEventIds.length ||
+          !removeEventIds.every((eventId) => currentIds.has(eventId))
+        ) {
+          throw new TypeError("queue settlement contains unknown event IDs");
+        }
+        if (deadLetters.length > 0 && !deadLetterStorage) {
+          throw new TypeError("dead-letter storage is not configured");
+        }
+        const deadLetterIds = new Set(
+          deadLetters.map((record) => record.event_id),
+        );
+        if (
+          deadLetterIds.size !== deadLetters.length ||
+          !deadLetters.every(
+            (record) =>
+              removeIds.has(record.event_id) &&
+              typeof record.event_type === "string" &&
+              typeof record.reason === "string" &&
+              typeof record.rejected_at === "string",
+          )
+        ) {
+          throw new TypeError("dead-letter records are invalid");
+        }
+
+        if (deadLetters.length > 0) {
+          const existing = await deadLetterStorage.read();
+          const existingIds = new Set(
+            existing.map((record) => record.event_id),
+          );
+          await deadLetterStorage.write(
+            [
+              ...existing,
+              ...deadLetters.filter(
+                (record) => !existingIds.has(record.event_id),
+              ),
+            ].slice(-limit),
+          );
+        }
+        const remaining = events.filter(
+          (event) => !removeIds.has(event.event_id),
+        );
+        await storage.write(remaining);
+        return remaining.length;
+      });
+    },
+
+    async listDeadLetters() {
+      await pendingWrite;
+      return structuredClone((await deadLetterStorage?.read()) ?? []);
+    },
+
+    async clearDeadLetters() {
+      return runExclusive(async () => {
+        if (deadLetterStorage) {
+          await deadLetterStorage.write([]);
+        }
       });
     },
   };

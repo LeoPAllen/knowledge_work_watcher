@@ -6,12 +6,13 @@ A minimal extension exists under `extension/`. It includes Manifest V3 controls,
 local persistence, a URL privacy filter, minimized navigation telemetry, and
 scoped search, LLM, and knowledge-site parsers. An MVP Fastify API validates
 events and stores them append-only in local SQLite. The extension does not
-upload to it yet; research ETL remains absent.
+upload unless the participant enables sync; research ETL remains absent.
 
 ## Extension Layout
 
 - `extension/manifest.json`: MV3 with storage and webNavigation permissions
 - `extension/src/background/`: service worker and telemetry controller
+- `extension/src/background/upload-sync.mjs`: gated batching and retry control
 - `extension/src/search/`: scoped content script and engine parsers
 - `extension/src/llm/`: scoped content script and tool parsers
 - `extension/src/knowledge/`: metadata-only knowledge-site parsers
@@ -39,7 +40,8 @@ upload to it yet; research ETL remains absent.
      invalid before telemetry or any future adapter runs.
    - Applies deny and sensitive rules before default or custom allowlists.
 4. **Local queue**
-   - Stores validated events before any future upload.
+   - Stores validated events until backend acknowledgement.
+   - Keeps metadata-only rejection records in a local dead-letter queue.
    - Retention, encryption, and deletion behavior are `TODO` pending study and
      IRB requirements.
 5. **Backend ingestion**
@@ -53,9 +55,9 @@ upload to it yet; research ETL remains absent.
 
 `signal -> consent/filter -> minimization -> local queue`
 
-`future upload -> bearer auth -> validation -> append-only SQLite`
+`active upload -> bearer auth -> validation -> append-only SQLite`
 
-Upload must be separately implemented, consented, and reviewed.
+Upload is off by default and stops while paused or after consent revocation.
 
 ## Boundaries
 

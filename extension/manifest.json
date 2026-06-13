@@ -4,8 +4,14 @@
   "version": "0.1.0",
   "description": "Privacy-preserving research extension with local, consent-gated knowledge-work telemetry.",
   "permissions": [
+    "alarms",
     "storage",
     "webNavigation"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
   "host_permissions": [
     "https://www.google.com/*",

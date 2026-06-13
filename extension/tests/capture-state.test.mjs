@@ -40,6 +40,8 @@ test("defaults to not consented with capture off", async () => {
   assert.equal(state.ambient_enabled, false);
   assert.equal(state.paused, false);
   assert.equal(state.capture_status, "off");
+  assert.equal(state.upload_enabled, false);
+  assert.equal(state.study_auth_token_configured, false);
 });
 
 test("cannot enable ambient capture before consent", async () => {
@@ -80,6 +82,10 @@ test("revoking consent disables capture and queues consent change", async () => 
   const { controller, queue } = createController(storage);
 
   await controller.setConsent(true);
+  await controller.updateConfig({
+    study_auth_token: "synthetic-study-token",
+    upload_enabled: true,
+  });
   await controller.setAmbientEnabled(true);
   const state = await controller.setConsent(false);
   const stored = await storage.read();
@@ -88,8 +94,27 @@ test("revoking consent disables capture and queues consent change", async () => 
   assert.equal(stored.consent_accepted, false);
   assert.equal(stored.ambient_enabled, false);
   assert.equal(stored.paused, false);
+  assert.equal(stored.upload_enabled, false);
   assert.equal(stored.session_id, null);
   assert.deepEqual(queue.events.at(-1).payload, { consent_granted: false });
+});
+
+test("keeps study tokens private while exposing upload readiness", async () => {
+  const { controller } = createController(createMemoryStateStorage());
+  const state = await controller.updateConfig({
+    study_server_url: "http://localhost:3000",
+    study_auth_token: "synthetic-study-token",
+    upload_enabled: true,
+  });
+
+  assert.equal(state.study_server_url, "http://localhost:3000");
+  assert.equal(state.study_auth_token_configured, true);
+  assert.equal(state.upload_enabled, true);
+  assert.equal("study_auth_token" in state, false);
+  assert.equal(
+    (await controller.getUploadContext()).study_auth_token,
+    "synthetic-study-token",
+  );
 });
 
 test("state persists across controller recreation", async () => {
@@ -141,7 +166,7 @@ test("rejects unsafe study server URLs", async () => {
     controller.updateConfig({
       study_server_url: "https://user:secret@study.invalid",
     }),
-    /credential-free HTTP/,
+    /HTTPS origin or an HTTP loopback origin/,
   );
 });
 

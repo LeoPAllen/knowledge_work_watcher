@@ -1,16 +1,20 @@
-import { createEvent } from "../shared/event-schema.mjs";
-import { createLocalQueue } from "../shared/local-queue.mjs";
 import { hashParticipantId } from "../shared/participant-id.mjs";
-import { createChromeStorageAdapter } from "../shared/storage.mjs";
+import { permissionPatternForServer } from "../shared/upload-policy.mjs";
 
-const queue = createLocalQueue(createChromeStorageAdapter());
 const countElement = document.querySelector("#queue-count");
+const deadLetterCount = document.querySelector("#dead-letter-count");
 const debugStatus = document.querySelector("#debug-status");
 const pageStatus = document.querySelector("#options-status");
 const participantInput = document.querySelector("#participant-id");
 const participantStatus = document.querySelector("#participant-status");
 const clearParticipantButton = document.querySelector("#clear-participant");
 const serverUrlInput = document.querySelector("#server-url");
+const authTokenInput = document.querySelector("#auth-token");
+const authTokenStatus = document.querySelector("#auth-token-status");
+const clearAuthTokenButton = document.querySelector("#clear-auth-token");
+const uploadEnabledInput = document.querySelector("#upload-enabled");
+const uploadStatus = document.querySelector("#upload-status");
+const syncNowButton = document.querySelector("#sync-now");
 const allowlistInput = document.querySelector("#allowlist");
 const debugModeInput = document.querySelector("#debug-mode");
 const consentStatus = document.querySelector("#consent-status");
@@ -20,21 +24,29 @@ const pauseResumeButton = document.querySelector("#pause-resume");
 const acceptButton = document.querySelector("#accept-consent");
 const revokeButton = document.querySelector("#revoke-consent");
 const createTestButton = document.querySelector("#create-test-event");
+let currentState = null;
 
 async function send(message) {
   const response = await chrome.runtime.sendMessage(message);
   if (!response?.ok) {
     throw new Error(response?.error ?? "Extension state request failed");
   }
-  return response.state;
+  return response;
 }
 
 function renderState(state) {
+  currentState = state;
   participantStatus.textContent = state.participant_id_configured
     ? "Configured; enter a new value only to replace it"
     : "Not configured";
   clearParticipantButton.disabled = !state.participant_id_configured;
   serverUrlInput.value = state.study_server_url;
+  authTokenStatus.textContent = state.study_auth_token_configured
+    ? "Configured; enter a new value only to replace it"
+    : "Not configured";
+  clearAuthTokenButton.disabled = !state.study_auth_token_configured;
+  uploadEnabledInput.checked = state.upload_enabled;
+  uploadEnabledInput.disabled = !state.consent_accepted;
   allowlistInput.value = state.allowlist.join("\n");
   debugModeInput.checked = state.debug_mode;
   createTestButton.disabled = !state.debug_mode;
@@ -58,10 +70,41 @@ function renderState(state) {
   }
 }
 
+function renderSync(sync) {
+  const labels = {
+    blocked: "Blocked by capture state",
+    disabled: "Local only",
+    error: "Needs attention",
+    idle: "Idle",
+    retry_wait: "Retry scheduled",
+    succeeded: "Up to date",
+    syncing: "Uploading",
+  };
+  uploadStatus.textContent = labels[sync.status] ?? "Unknown";
+  if (sync.last_error) {
+    uploadStatus.textContent += ` (${sync.last_error})`;
+  }
+  countElement.textContent = String(sync.queued_count);
+  deadLetterCount.textContent = String(sync.dead_letter_count);
+  syncNowButton.disabled =
+    !currentState?.upload_enabled ||
+    currentState.capture_status !== "active" ||
+    !currentState.study_server_url ||
+    !currentState.study_auth_token_configured ||
+    sync.status === "syncing";
+}
+
 async function refreshCount() {
-  const events = await queue.list();
+  const { events } = await send({ type: "list_events" });
   countElement.textContent = String(events.length);
   return events;
+}
+
+async function refreshDashboard() {
+  const dashboard = await send({ type: "get_dashboard" });
+  renderState(dashboard.state);
+  renderSync(dashboard.sync);
+  return dashboard;
 }
 
 document
@@ -73,6 +116,7 @@ document
     try {
       const changes = {
         study_server_url: serverUrlInput.value.trim(),
+        upload_enabled: uploadEnabledInput.checked,
         allowlist: allowlistInput.value
           .split("\n")
           .map((domain) => domain.trim().toLowerCase())
@@ -85,12 +129,46 @@ document
           participantInput.value,
         );
       }
+      if (authTokenInput.value) {
+        changes.study_auth_token = authTokenInput.value;
+      }
+      if (
+        changes.upload_enabled &&
+        !authTokenInput.value &&
+        !currentState?.study_auth_token_configured
+      ) {
+        throw new Error("Study token is required");
+      }
 
-      const state = await send({ type: "update_config", changes });
+      const newPermission = changes.study_server_url
+        ? permissionPatternForServer(changes.study_server_url)
+        : null;
+      const oldPermission = currentState?.study_server_url
+        ? permissionPatternForServer(currentState.study_server_url)
+        : null;
+      if (
+        changes.upload_enabled &&
+        newPermission &&
+        !(await chrome.permissions.request({ origins: [newPermission] }))
+      ) {
+        throw new Error("Server permission was not granted");
+      }
+
+      const { state } = await send({ type: "update_config", changes });
+      if (
+        oldPermission &&
+        (!changes.upload_enabled || oldPermission !== newPermission)
+      ) {
+        await chrome.permissions.remove({ origins: [oldPermission] });
+      }
       participantInput.value = "";
+      authTokenInput.value = "";
       renderState(state);
-      await refreshCount();
-      pageStatus.textContent ||= "Local configuration saved.";
+      const { sync } = await send({ type: "get_dashboard" });
+      renderSync(sync);
+      pageStatus.textContent ||= state.upload_enabled
+        ? "Configuration saved; upload is enabled."
+        : "Configuration saved in local-only mode.";
     } catch {
       pageStatus.textContent = "Could not save local configuration.";
     }
@@ -99,7 +177,7 @@ document
 clearParticipantButton.addEventListener("click", async () => {
   pageStatus.textContent = "";
   try {
-    const state = await send({
+    const { state } = await send({
       type: "update_config",
       changes: { participant_id_hash: null },
     });
@@ -115,7 +193,7 @@ clearParticipantButton.addEventListener("click", async () => {
 acceptButton.addEventListener("click", async () => {
   pageStatus.textContent = "";
   try {
-    renderState(await send({ type: "set_consent", accepted: true }));
+    renderState((await send({ type: "set_consent", accepted: true })).state);
     await refreshCount();
     pageStatus.textContent ||= "Placeholder consent accepted locally.";
   } catch {
@@ -130,7 +208,13 @@ revokeButton.addEventListener("click", async () => {
 
   pageStatus.textContent = "";
   try {
-    renderState(await send({ type: "set_consent", accepted: false }));
+    const permission = currentState?.study_server_url
+      ? permissionPatternForServer(currentState.study_server_url)
+      : null;
+    renderState((await send({ type: "set_consent", accepted: false })).state);
+    if (permission) {
+      await chrome.permissions.remove({ origins: [permission] });
+    }
     await refreshCount();
     pageStatus.textContent ||= "Consent revoked; ambient capture is off.";
   } catch {
@@ -142,14 +226,14 @@ ambientInput.addEventListener("change", async () => {
   pageStatus.textContent = "";
   try {
     renderState(
-      await send({ type: "set_ambient", enabled: ambientInput.checked }),
+      (await send({ type: "set_ambient", enabled: ambientInput.checked })).state,
     );
     pageStatus.textContent = ambientInput.checked
-      ? "Ambient capture state enabled. No browsing data is collected."
+      ? "Ambient capture enabled; approved telemetry may be queued."
       : "Ambient capture state disabled.";
   } catch {
     try {
-      renderState(await send({ type: "get_state" }));
+      renderState((await send({ type: "get_state" })).state);
     } catch {
       // Keep the error message useful even when state cannot be re-read.
     }
@@ -162,10 +246,10 @@ pauseResumeButton.addEventListener("click", async () => {
   try {
     const action = pauseResumeButton.dataset.action;
     renderState(
-      await send({
+      (await send({
         type: action === "pause" ? "pause_capture" : "resume_capture",
         source: "options",
-      }),
+      })).state,
     );
     await refreshCount();
     pageStatus.textContent ||=
@@ -177,17 +261,8 @@ pauseResumeButton.addEventListener("click", async () => {
 
 createTestButton.addEventListener("click", async () => {
   try {
-    const state = await send({ type: "get_state" });
-    const event = createEvent({
-      eventType: "queue_test_event",
-      extensionVersion: chrome.runtime.getManifest().version,
-      captureMode:
-        state.capture_status === "active" ? "ambient" : state.capture_status,
-      source: "debug",
-      payload: { synthetic: true },
-    });
-    await queue.append(event);
-    await refreshCount();
+    const { sync } = await send({ type: "create_test_event" });
+    renderSync(sync);
     debugStatus.textContent = "Synthetic test event added.";
   } catch {
     debugStatus.textContent = "Could not add the synthetic test event.";
@@ -221,17 +296,90 @@ document.querySelector("#clear-events").addEventListener("click", async () => {
   }
 
   try {
-    await queue.clear();
-    await refreshCount();
+    const { sync } = await send({ type: "clear_events" });
+    renderSync(sync);
     debugStatus.textContent = "Local event queue cleared.";
   } catch {
     debugStatus.textContent = "Could not clear the local queue.";
   }
 });
 
-Promise.all([send({ type: "get_state" }), refreshCount()])
-  .then(([state]) => renderState(state))
+clearAuthTokenButton.addEventListener("click", async () => {
+  pageStatus.textContent = "";
+  try {
+    const permission = currentState?.study_server_url
+      ? permissionPatternForServer(currentState.study_server_url)
+      : null;
+    const { state } = await send({
+      type: "update_config",
+      changes: { study_auth_token: "", upload_enabled: false },
+    });
+    if (permission) {
+      await chrome.permissions.remove({ origins: [permission] });
+    }
+    authTokenInput.value = "";
+    renderState(state);
+    renderSync((await send({ type: "get_dashboard" })).sync);
+    pageStatus.textContent = "Study token removed; upload is disabled.";
+  } catch {
+    pageStatus.textContent = "Could not remove the study token.";
+  }
+});
+
+syncNowButton.addEventListener("click", async () => {
+  debugStatus.textContent = "Uploading queued events...";
+  syncNowButton.disabled = true;
+  try {
+    renderSync((await send({ type: "sync_now" })).sync);
+    debugStatus.textContent = "Upload attempt completed.";
+  } catch {
+    debugStatus.textContent = "Upload attempt failed safely.";
+    await refreshDashboard();
+  }
+});
+
+document
+  .querySelector("#export-dead-letters")
+  .addEventListener("click", async () => {
+    try {
+      const { dead_letters: records } = await send({
+        type: "list_dead_letters",
+      });
+      const blob = new Blob([JSON.stringify(records, null, 2)], {
+        type: "application/json",
+      });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "knowledge-work-watcher-rejected-events.json";
+      link.hidden = true;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+      debugStatus.textContent = `Exported ${records.length} rejection record(s).`;
+    } catch {
+      debugStatus.textContent = "Could not export rejection records.";
+    }
+  });
+
+document
+  .querySelector("#clear-dead-letters")
+  .addEventListener("click", async () => {
+    if (!window.confirm("Clear all local rejection records?")) {
+      return;
+    }
+    try {
+      renderSync((await send({ type: "clear_dead_letters" })).sync);
+      debugStatus.textContent = "Rejection records cleared.";
+    } catch {
+      debugStatus.textContent = "Could not clear rejection records.";
+    }
+  });
+
+refreshDashboard()
   .catch(() => {
     countElement.textContent = "Unavailable";
+    deadLetterCount.textContent = "Unavailable";
     pageStatus.textContent = "Could not read local extension state.";
   });

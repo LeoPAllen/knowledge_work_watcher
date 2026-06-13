@@ -2,6 +2,8 @@ const consentStatus = document.querySelector("#consent-status");
 const captureStatus = document.querySelector("#capture-status");
 const consentDot = document.querySelector("#consent-dot");
 const captureDot = document.querySelector("#capture-dot");
+const uploadStatus = document.querySelector("#upload-status");
+const uploadDot = document.querySelector("#upload-dot");
 const captureAction = document.querySelector("#capture-action");
 const feedback = document.querySelector("#popup-status");
 
@@ -13,13 +15,29 @@ async function send(message) {
   return response.state;
 }
 
-function render(state) {
+function render(state, sync) {
   consentStatus.textContent = state.consent_accepted ? "Accepted" : "Not accepted";
   consentDot.dataset.state = state.consent_accepted ? "active" : "off";
 
   const labels = { active: "Active", paused: "Paused", off: "Off" };
   captureStatus.textContent = labels[state.capture_status];
   captureDot.dataset.state = state.capture_status;
+  const uploadLabels = {
+    blocked: "Blocked",
+    disabled: "Local only",
+    error: "Needs attention",
+    idle: "Idle",
+    retry_wait: "Retry scheduled",
+    succeeded: "Up to date",
+    syncing: "Uploading",
+  };
+  uploadStatus.textContent = uploadLabels[sync.status] ?? "Unknown";
+  uploadDot.dataset.state =
+    sync.status === "succeeded"
+      ? "active"
+      : sync.status === "retry_wait" || sync.status === "error"
+        ? "paused"
+        : "off";
 
   captureAction.hidden = state.capture_status === "off";
   if (state.capture_status === "active") {
@@ -39,7 +57,13 @@ captureAction.addEventListener("click", async () => {
     const state = await send({
       type: action === "pause" ? "pause_capture" : "resume_capture",
     });
-    render(state);
+    const dashboard = await chrome.runtime.sendMessage({
+      type: "get_dashboard",
+    });
+    if (!dashboard?.ok) {
+      throw new Error("Dashboard unavailable");
+    }
+    render(state, dashboard.sync);
     feedback.textContent =
       action === "pause" ? "Capture paused." : "Capture resumed.";
   } catch {
@@ -53,10 +77,16 @@ document.querySelector("#open-options").addEventListener("click", () => {
   chrome.runtime.openOptionsPage();
 });
 
-send({ type: "get_state" })
-  .then(render)
+chrome.runtime.sendMessage({ type: "get_dashboard" })
+  .then((response) => {
+    if (!response?.ok) {
+      throw new Error("Dashboard unavailable");
+    }
+    render(response.state, response.sync);
+  })
   .catch(() => {
     consentStatus.textContent = "Unavailable";
     captureStatus.textContent = "Unavailable";
+    uploadStatus.textContent = "Unavailable";
     feedback.textContent = "Could not read extension state.";
   });

@@ -29,11 +29,14 @@ if (manifest.background?.type !== "module") {
 const permissions = manifest.permissions ?? [];
 if (
   !Array.isArray(permissions) ||
-  permissions.length !== 2 ||
+  permissions.length !== 3 ||
+  !permissions.includes("alarms") ||
   !permissions.includes("storage") ||
   !permissions.includes("webNavigation")
 ) {
-  errors.push("the only permitted extension permissions are storage and webNavigation");
+  errors.push(
+    "the only permitted extension permissions are alarms, storage, and webNavigation",
+  );
 }
 
 const expectedHosts = [
@@ -70,8 +73,15 @@ if (
   errors.push("host permissions must exactly match approved parser hosts");
 }
 
-if ("optional_host_permissions" in manifest) {
-  errors.push("optional host permissions must be omitted");
+if (
+  JSON.stringify(manifest.optional_host_permissions) !==
+  JSON.stringify([
+    "https://*/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+  ])
+) {
+  errors.push("optional upload hosts must match the reviewed server policy");
 }
 
 const [searchScript, llmScript, knowledgeScript] =

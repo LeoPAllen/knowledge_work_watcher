@@ -1,14 +1,37 @@
 import { createEvent } from "../shared/event-schema.mjs";
 import { createLocalQueue } from "../shared/local-queue.mjs";
-import { createChromeStorageAdapter } from "../shared/storage.mjs";
+import {
+  createChromeDeadLetterStorage,
+  createChromeStorageAdapter,
+} from "../shared/storage.mjs";
 import { createChromeStateStorage } from "../shared/config-storage.mjs";
+import { createChromeSyncStateStorage } from "../shared/sync-state.mjs";
 import { createCaptureStateController } from "../shared/capture-state.mjs";
 import { createNavigationTelemetry } from "./navigation-telemetry.mjs";
 import { createSearchTelemetry } from "./search-telemetry.mjs";
 import { createLlmTelemetry } from "./llm-telemetry.mjs";
 import { createKnowledgeTelemetry } from "./knowledge-telemetry.mjs";
+import {
+  createUploadSync,
+  UPLOAD_ALARM_NAME,
+} from "./upload-sync.mjs";
 
-const queue = createLocalQueue(createChromeStorageAdapter());
+const rawQueue = createLocalQueue(createChromeStorageAdapter(), {
+  deadLetterStorage: createChromeDeadLetterStorage(),
+});
+let uploadSync;
+const queue = {
+  async append(event) {
+    const count = await rawQueue.append(event);
+    uploadSync?.requestSync();
+    return count;
+  },
+  list: () => rawQueue.list(),
+  clear: () => rawQueue.clear(),
+  settle: (settlement) => rawQueue.settle(settlement),
+  listDeadLetters: () => rawQueue.listDeadLetters(),
+  clearDeadLetters: () => rawQueue.clearDeadLetters(),
+};
 const extensionVersion = chrome.runtime.getManifest().version;
 const controller = createCaptureStateController({
   storage: createChromeStateStorage(),
@@ -36,6 +59,12 @@ const knowledgeTelemetry = createKnowledgeTelemetry({
   queue,
   extensionVersion,
 });
+uploadSync = createUploadSync({
+  stateController: controller,
+  queue,
+  syncStateStorage: createChromeSyncStateStorage(),
+});
+uploadSync.requestSync();
 
 function runTelemetry(handler) {
   handler().catch(() => {
@@ -61,6 +90,12 @@ chrome.webNavigation.onCommitted.addListener((details) => {
 
 chrome.windows.onFocusChanged.addListener((windowId) => {
   runTelemetry(() => telemetry.onWindowFocusChanged(windowId));
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === UPLOAD_ALARM_NAME) {
+    uploadSync.requestSync();
+  }
 });
 
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
@@ -126,12 +161,65 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   const source = sender.url?.includes("/popup/") ? "popup" : "options";
   const actions = {
-    get_state: () => controller.getState(),
-    update_config: () => controller.updateConfig(message.changes, source),
-    set_consent: () => controller.setConsent(message.accepted, source),
-    set_ambient: () => controller.setAmbientEnabled(message.enabled, source),
-    pause_capture: () => controller.pause(source),
-    resume_capture: () => controller.resume(source),
+    get_state: async () => ({ state: await controller.getState() }),
+    get_dashboard: async () => ({
+      state: await controller.getState(),
+      sync: await uploadSync.getStatus(),
+    }),
+    update_config: async () => {
+      const state = await controller.updateConfig(message.changes, source);
+      void uploadSync.syncNow().catch(() => {});
+      return { state };
+    },
+    set_consent: async () => {
+      const state = await controller.setConsent(message.accepted, source);
+      uploadSync.requestSync();
+      return { state };
+    },
+    set_ambient: async () => {
+      const state = await controller.setAmbientEnabled(message.enabled, source);
+      uploadSync.requestSync();
+      return { state };
+    },
+    pause_capture: async () => {
+      const state = await controller.pause(source);
+      uploadSync.requestSync();
+      return { state };
+    },
+    resume_capture: async () => {
+      const state = await controller.resume(source);
+      uploadSync.requestSync();
+      return { state };
+    },
+    sync_now: async () => {
+      await uploadSync.syncNow();
+      return { sync: await uploadSync.getStatus() };
+    },
+    list_events: async () => ({ events: await queue.list() }),
+    clear_events: async () => {
+      await queue.clear();
+      return { sync: await uploadSync.getStatus() };
+    },
+    list_dead_letters: async () => ({
+      dead_letters: await queue.listDeadLetters(),
+    }),
+    clear_dead_letters: async () => {
+      await queue.clearDeadLetters();
+      return { sync: await uploadSync.getStatus() };
+    },
+    create_test_event: async () => {
+      const state = await controller.getState();
+      const event = createEvent({
+        eventType: "queue_test_event",
+        extensionVersion,
+        captureMode:
+          state.capture_status === "active" ? "ambient" : state.capture_status,
+        source: "debug",
+        payload: { synthetic: true },
+      });
+      await queue.append(event);
+      return { sync: await uploadSync.getStatus() };
+    },
   };
   const action = actions[message?.type];
 
@@ -140,7 +228,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   action()
-    .then((state) => sendResponse({ ok: true, state }))
+    .then((result) => sendResponse({ ok: true, ...result }))
     .catch((error) => sendResponse({ ok: false, error: error.message }));
   return true;
 });

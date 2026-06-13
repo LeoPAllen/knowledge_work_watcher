@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { createEvent } from "../src/shared/event-schema.mjs";
 import { createLocalQueue } from "../src/shared/local-queue.mjs";
 import { createMemoryStorageAdapter } from "../src/shared/storage.mjs";
+import { createMemoryDeadLetterStorage } from "../src/shared/storage.mjs";
 
 function syntheticEvent(eventId) {
   return createEvent({
@@ -73,4 +74,53 @@ test("rejects malformed events already present in storage", async () => {
     queue.append(syntheticEvent("event-1")),
     /Stored queue contains an invalid event/,
   );
+});
+
+test("settles acknowledged events without removing concurrent additions", async () => {
+  const deadLetterStorage = createMemoryDeadLetterStorage();
+  const queue = createLocalQueue(createMemoryStorageAdapter(), {
+    deadLetterStorage,
+  });
+  await queue.append(syntheticEvent("event-1"));
+  await queue.append(syntheticEvent("event-2"));
+
+  await queue.settle({
+    removeEventIds: ["event-1"],
+    deadLetters: [
+      {
+        event_id: "event-1",
+        event_type: "queue_test_event",
+        reason: "invalid_event",
+        rejected_at: "2026-06-13T12:01:00.000Z",
+      },
+    ],
+  });
+
+  assert.deepEqual(
+    (await queue.list()).map((event) => event.event_id),
+    ["event-2"],
+  );
+  assert.deepEqual(await queue.listDeadLetters(), [
+    {
+      event_id: "event-1",
+      event_type: "queue_test_event",
+      reason: "invalid_event",
+      rejected_at: "2026-06-13T12:01:00.000Z",
+    },
+  ]);
+  await queue.clearDeadLetters();
+  assert.deepEqual(await queue.listDeadLetters(), []);
+});
+
+test("rejects settlement for event IDs no longer in the queue", async () => {
+  const queue = createLocalQueue(createMemoryStorageAdapter(), {
+    deadLetterStorage: createMemoryDeadLetterStorage(),
+  });
+  await queue.append(syntheticEvent("event-1"));
+
+  await assert.rejects(
+    queue.settle({ removeEventIds: ["missing"], deadLetters: [] }),
+    /unknown event IDs/,
+  );
+  assert.equal((await queue.list()).length, 1);
 });
