@@ -22,10 +22,13 @@ records must be synthetic or demo data.
 | Skips | Signal and policy reason/category | No URL, hostname, title, or IDs |
 | Search query | Redacted query or null, engine | Supported search pages only |
 | Search exposure | Rank, title, destination hostname/hash, type | Up to 20 recognized organic results |
+| Search snippet | Redacted/capped visible snippet plus parser metadata | Study-expanded event |
+| Search full URL | Normalized allowlisted destination plus hostname/hash | Tracking/secret parameters removed |
 | Search click | Rank and destination hostname/hash | Recognized result anchors only |
 | Parser error | Kind/site, code, version, page hash | No exception or DOM text |
 | LLM prompt | Redacted prompt or null, turn, tool/model | Named prompt nodes only |
-| LLM response | Turn and source count | Response text always excluded |
+| LLM response | Turn and source count | Minimized event |
+| LLM response text | Redacted/capped visible assistant text | Study-expanded event |
 | LLM sources | Destination hostname/hash | Assistant links, max 20 |
 | LLM interaction | Counts, parser version, conversation ID | Metadata only |
 | Knowledge page | Site/category, type, title, URL hash | Allowlisted pages only |
@@ -40,6 +43,7 @@ records must be synthetic or demo data.
 | Episodes | Search/LLM groups and activity sessions | Reconstruct work sequences |
 | Exposures | Page, knowledge, and source metadata | Analyze information exposure |
 | Derived links | Hash-matched downstream visits and traces | Analyze solution assembly |
+| Sensitive exports | Response text, snippets, full URLs | Three separate CSV tables |
 
 Raw participant IDs are hashed before storage and are not redisplayed.
 
@@ -53,13 +57,13 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 ## Excluded
 
 - Passwords, form fields, cookies, tokens, clipboard contents, and screenshots
-- Broad DOM or page-text capture
+- Broad DOM or arbitrary page-text capture
 - Private, intranet, localhost, file, and non-allowlisted domains
 - Real participant records in the repository
 - Upload while disabled, paused, not consented, or permission is absent
-- Raw URLs, query strings, fragments, credentials, and navigation titles
-- Search snippets, ads, arbitrary page text, and raw DOM
-- LLM response text, profile fields, uploads, attachments, and prompt inputs
+- Raw navigation URLs, credentials, fragments, and navigation titles
+- Search ads, unrelated page text, profile fields, and raw DOM
+- LLM profile fields, uploads, attachments, file contents, and hidden fields
 - Q&A bodies, code, README/article text, comments, and raw page content
 - Private/ambiguous GitHub repositories, profiles, settings, and dashboards
 
@@ -68,6 +72,5 @@ Raw participant IDs are hashed before storage and are not redisplayed.
 - Production upload receipts and operational logs
 - `TODO(IRB)`: retention, deletion, participant identifiers, and approved text
   fields
-- `TODO(IRB)`: approve search query and result-title fields before study use
-- `TODO(IRB)`: approve LLM prompt text before study use
+- `TODO(IRB)`: supply externally approved language and field authorization
 - `TODO(IRB)`: approve knowledge-page titles/headings before study use

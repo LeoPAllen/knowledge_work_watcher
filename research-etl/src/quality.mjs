@@ -1,8 +1,22 @@
-import { EVENT_TYPES, SCHEMA_VERSION, validateEvent } from "../../extension/src/shared/event-schema.mjs";
+import {
+  EVENT_TYPES,
+  SUPPORTED_SCHEMA_VERSIONS,
+  validateEvent,
+} from "../../extension/src/shared/event-schema.mjs";
 
 const SECRET =
   /\b(?:api[_-]?key|password|passwd|secret|token)\s*[:=]\s*\S+|\bsk-[a-z0-9_-]{12,}|-----BEGIN [A-Z ]*PRIVATE KEY-----/i;
 const RAW_URL_FIELD = /(^|_)(url|href|referrer)$/i;
+const SENSITIVE_TABLES = new Set([
+  "sensitive_llm_response_text",
+  "sensitive_search_snippets",
+  "sensitive_search_full_urls",
+]);
+const SENSITIVE_COLUMNS = new Set([
+  "response_text",
+  "snippet_text",
+  "destination_url",
+]);
 
 function isIsoTimestamp(value) {
   return (
@@ -46,7 +60,7 @@ export function validateRecords(records) {
 
   for (const record of records) {
     const { event } = record;
-    if (event?.schema_version !== SCHEMA_VERSION) {
+    if (!SUPPORTED_SCHEMA_VERSIONS.includes(event?.schema_version)) {
       throw new TypeError(
         `Unsupported schema version for ${event?.event_id ?? "unknown event"}`,
       );
@@ -99,6 +113,17 @@ export function assertSafeOutputs(tables) {
   for (const [tableName, table] of Object.entries(tables)) {
     for (const row of table.rows) {
       for (const [column, value] of Object.entries(row)) {
+        if (
+          !SENSITIVE_TABLES.has(tableName) &&
+          SENSITIVE_COLUMNS.has(column) &&
+          value !== null &&
+          value !== undefined &&
+          value !== ""
+        ) {
+          throw new TypeError(
+            `Sensitive value leaked into minimized table ${tableName}.${column}`,
+          );
+        }
         if (typeof value === "string" && SECRET.test(value)) {
           throw new TypeError(
             `Secret-like value in ${tableName}.${column}`,

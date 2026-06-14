@@ -24,7 +24,7 @@
 - Add narrow search-domain adapters.
 - Add narrow LLM-domain adapters.
 - Record exposure and downstream navigation without broad page capture.
-- Keep optional text capture disabled.
+- Keep study-expanded text capture scoped, explicit, redacted, and capped.
 
 ## 4. Study Readiness
 
@@ -34,7 +34,7 @@
 
 ## 5. Local Ingestion
 
-- Validate authenticated schema v1 events at a bounded HTTP interface.
+- Validate authenticated schema v1/v2 events at a bounded HTTP interface.
 - Store accepted raw events append-only in local SQLite.
 - Keep production deployment deferred.
 

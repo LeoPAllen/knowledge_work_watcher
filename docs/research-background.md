@@ -21,8 +21,8 @@ and downstream navigation rather than collecting page content.
 - Ambient capture requires stronger visibility and pause controls than
   task-bounded instrumentation.
 - Behavioral metadata can still be sensitive and must be minimized.
-- Optional text capture is deferred pending an explicit research need, privacy
-  review, and `TODO(IRB)` resolution.
+- Study-expanded text capture requires external consent, scoped parsers,
+  redaction/caps, and `TODO(IRB)` resolution.
 - Claims about approved procedures, populations, or retention are `TODO(IRB)`.
 
 Detailed literature review and formal citations are intentionally deferred

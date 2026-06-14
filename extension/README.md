@@ -19,12 +19,15 @@ configuration, placeholder consent, ambient state, and pause/resume. The debug
 section can create synthetic events, inspect queue/rejection counts, export
 records, clear local storage, and start a manual sync.
 
-When capture is active, allowlisted top-frame navigation plus related tab/window
-signals are queued locally. Supported search pages may also queue a redacted
-query, result rank/title/type, and destination hostname/hash. Snippets, raw
-URLs, DOM, account data, and denied destination details are not stored.
-LLM pages may queue redacted prompts, response metadata, model labels, and
-source hostname/hashes. Response text and attachments are excluded.
+When baseline capture is active, the study profile always records visible LLM
+assistant responses, visible search snippets, and normalized full search-result
+URLs in explicit expanded events. No per-field toggles exist. Install/use only
+after completing the external study consent flow.
+
+Text is redacted and capped; full URLs require an allowed destination and have
+tracking/credential parameters removed. Raw DOM, hidden nodes, profiles,
+uploads, attachments, passwords, tokens, cookies, and denied/private pages
+remain excluded.
 
 Knowledge-site parsers add titles/headings and structured Q&A, public GitHub,
 package, documentation, and Wikipedia metadata. Full page bodies are excluded.
@@ -34,18 +37,19 @@ write-only study token, and permission for the configured HTTPS server.
 Loopback HTTP is permitted for development. Failures preserve queued events;
 explicit server rejections create metadata-only local records.
 
-## Manual Privacy Check
+## Study-Build Live Checklist
 
-1. Load the unpacked extension and open its options page.
-2. Set a synthetic participant ID, accept placeholder consent, and enable
-   ambient capture.
-3. Visit `https://en.wikipedia.org/wiki/Knowledge_worker`.
-4. Visit a denied demo page such as `https://docs.google.com/`.
-5. Export local logs from options.
-6. Verify the allowed record has a hostname and URL hash but no raw URL/title.
-7. Verify the denied record is only `capture_skipped` policy metadata.
-8. Search a synthetic phrase on Google, Bing, or DuckDuckGo.
-9. Export again and verify search events contain no snippets or full URLs.
+1. Configure a synthetic participant, activate baseline capture, and confirm no
+   separate response/snippet/URL toggles appear.
+2. Validate ChatGPT, Claude, Gemini, Perplexity, and Copilot response events.
+3. Validate Google, Bing, and DuckDuckGo snippet and full-URL events.
+4. Confirm parser name/version, selector family, confidence, caps, and
+   redaction metadata are present.
+5. Pause and revoke capture; confirm expanded events stop immediately.
+6. Trigger a fixture/live selector miss and confirm only safe parser
+   error/degraded metadata is queued.
+7. Export logs and confirm no raw DOM, hidden fields, profiles, uploads,
+   attachments, cookies, passwords, tokens, or denied/private page data.
 
 ## Manual Upload Check
 

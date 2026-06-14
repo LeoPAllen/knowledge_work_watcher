@@ -1,6 +1,14 @@
 import { redactText } from "./query-redaction.mjs";
+import { classifyUrl } from "./privacy-filter.mjs";
+import {
+  containsSensitiveText,
+  FULL_URL_LIMIT,
+  LLM_RESPONSE_TEXT_LIMIT,
+  SEARCH_SNIPPET_TEXT_LIMIT,
+} from "./sensitive-data.mjs";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+export const SUPPORTED_SCHEMA_VERSIONS = Object.freeze([1, 2]);
 
 export const EVENT_TYPES = Object.freeze([
   "extension_installed",
@@ -18,8 +26,11 @@ export const EVENT_TYPES = Object.freeze([
   "search_query_observed",
   "search_results_exposed",
   "search_result_clicked",
+  "search_snippet_observed",
+  "search_result_full_url_observed",
   "llm_prompt_observed",
   "llm_response_observed",
+  "llm_response_text_observed",
   "llm_source_links_exposed",
   "llm_interaction_metadata",
   "knowledge_page_exposed",
@@ -28,6 +39,7 @@ export const EVENT_TYPES = Object.freeze([
   "code_repo_exposed",
   "docs_page_exposed",
   "parser_error",
+  "parser_degraded",
 ]);
 
 export const CAPTURE_MODES = Object.freeze(["off", "paused", "ambient"]);
@@ -140,6 +152,13 @@ const LLM_TOOLS = new Set([
 ]);
 const RESULT_TYPES = new Set(["organic", "ad", "ai", "other", "unknown"]);
 const REDACTION_REASONS = new Set(["email", "phone", "secret", "missing"]);
+const PARSER_CONFIDENCE = new Set(["high", "medium", "low"]);
+const SELECTOR_FAMILIES = new Set([
+  "canonical",
+  "fallback",
+  "semantic",
+  "none",
+]);
 const KNOWLEDGE_CATEGORIES = new Set([
   "qna",
   "code_repo",
@@ -254,6 +273,44 @@ function validateSearchResult(result) {
   );
 }
 
+const EXPANDED_METADATA_FIELDS = new Set([
+  "capture_profile",
+  "parser_name",
+  "parser_version",
+  "source_domain",
+  "capture_method",
+  "selector_family",
+  "confidence",
+]);
+
+function validateExpandedMetadata(payload) {
+  return (
+    payload.capture_profile === "study_expanded" &&
+    isNonEmptyString(payload.parser_name) &&
+    payload.parser_name.length <= 100 &&
+    Number.isInteger(payload.parser_version) &&
+    payload.parser_version >= 2 &&
+    isHostname(payload.source_domain) &&
+    payload.capture_method === "visible_dom_text" &&
+    SELECTOR_FAMILIES.has(payload.selector_family) &&
+    PARSER_CONFIDENCE.has(payload.confidence)
+  );
+}
+
+function validateStoredText(payload, field, limit) {
+  return (
+    isNonEmptyString(payload[field]) &&
+    payload[field].length <= limit &&
+    !containsSensitiveText(payload[field]) &&
+    Number.isInteger(payload.char_count_original) &&
+    payload.char_count_original >= 1 &&
+    Number.isInteger(payload.char_count_stored) &&
+    payload.char_count_stored === payload[field].length &&
+    typeof payload.truncated === "boolean" &&
+    typeof payload.redaction_applied === "boolean"
+  );
+}
+
 function validateLlmContext(payload, extraFields = new Set()) {
   const allowedFields = new Set([...LLM_CONTEXT_FIELDS, ...extraFields]);
   return (
@@ -330,7 +387,7 @@ function validateParserError(payload) {
         "results_root_missing",
         "parse_failed",
       ].includes(payload.error_code) &&
-      payload.parser_version === 1
+      [1, 2].includes(payload.parser_version)
     );
   }
   if (payload.parser_kind === "llm") {
@@ -350,7 +407,7 @@ function validateParserError(payload) {
         "conversation_root_missing",
         "parse_failed",
       ].includes(payload.error_code) &&
-      payload.parser_version === 1
+      [1, 2].includes(payload.parser_version)
     );
   }
   if (payload.parser_kind === "knowledge") {
@@ -511,6 +568,77 @@ function validatePayload(eventType, payload) {
         isHostname(payload.destination_hostname) &&
         isSha256(payload.destination_url_hash)
       );
+    case "search_snippet_observed":
+      return (
+        validateSearchContext(
+          payload,
+          new Set([
+            ...EXPANDED_METADATA_FIELDS,
+            "search_engine",
+            "rank",
+            "title",
+            "destination_hostname",
+            "destination_url_hash",
+            "result_type",
+            "snippet_text",
+            "char_count_original",
+            "char_count_stored",
+            "truncated",
+            "redaction_applied",
+          ]),
+        ) &&
+        validateExpandedMetadata(payload) &&
+        Number.isInteger(payload.rank) &&
+        payload.rank > 0 &&
+        isNonEmptyString(payload.title) &&
+        payload.title.length <= 300 &&
+        isSafeText(payload.title) &&
+        isHostname(payload.destination_hostname) &&
+        isSha256(payload.destination_url_hash) &&
+        RESULT_TYPES.has(payload.result_type) &&
+        validateStoredText(payload, "snippet_text", SEARCH_SNIPPET_TEXT_LIMIT)
+      );
+    case "search_result_full_url_observed":
+      return (
+        validateSearchContext(
+          payload,
+          new Set([
+            ...EXPANDED_METADATA_FIELDS,
+            "search_engine",
+            "rank",
+            "destination_hostname",
+            "destination_url_hash",
+            "destination_url",
+            "result_type",
+            "full_url_storage_enabled",
+          ]),
+        ) &&
+        validateExpandedMetadata(payload) &&
+        Number.isInteger(payload.rank) &&
+        payload.rank > 0 &&
+        isHostname(payload.destination_hostname) &&
+        isSha256(payload.destination_url_hash) &&
+        isNonEmptyString(payload.destination_url) &&
+        payload.destination_url.length <= FULL_URL_LIMIT &&
+        /^https?:\/\//.test(payload.destination_url) &&
+        (() => {
+          try {
+            const url = new URL(payload.destination_url);
+            return (
+              !url.username &&
+              !url.password &&
+              url.hash === "" &&
+              url.hostname.toLowerCase() === payload.destination_hostname &&
+              classifyUrl(url.href).classification === "allowed"
+            );
+          } catch {
+            return false;
+          }
+        })() &&
+        !containsSensitiveText(payload.destination_url) &&
+        RESULT_TYPES.has(payload.result_type) &&
+        payload.full_url_storage_enabled === true
+      );
     case "llm_prompt_observed":
       return (
         validateLlmContext(
@@ -553,6 +681,25 @@ function validatePayload(eventType, payload) {
         payload.source_count >= 0 &&
         payload.source_count <= 20
       );
+    case "llm_response_text_observed":
+      return (
+        validateLlmContext(
+          payload,
+          new Set([
+            ...EXPANDED_METADATA_FIELDS,
+            "response_index",
+            "response_text",
+            "char_count_original",
+            "char_count_stored",
+            "truncated",
+            "redaction_applied",
+          ]),
+        ) &&
+        validateExpandedMetadata(payload) &&
+        Number.isInteger(payload.response_index) &&
+        payload.response_index > 0 &&
+        validateStoredText(payload, "response_text", LLM_RESPONSE_TEXT_LIMIT)
+      );
     case "llm_source_links_exposed":
       return (
         validateLlmContext(
@@ -580,7 +727,7 @@ function validatePayload(eventType, payload) {
         ["prompt_count", "response_count", "source_count"].every(
           (field) => Number.isInteger(payload[field]) && payload[field] >= 0,
         ) &&
-        payload.parser_version === 1
+        [1, 2].includes(payload.parser_version)
       );
     case "knowledge_page_exposed":
       return validateKnowledgeContext(payload);
@@ -668,6 +815,36 @@ function validatePayload(eventType, payload) {
       );
     case "parser_error":
       return validateParserError(payload);
+    case "parser_degraded":
+      return (
+        hasOnlyFields(
+          payload,
+          new Set([
+            "capture_profile",
+            "parser_kind",
+            "parser_name",
+            "parser_version",
+            "source_domain",
+            "capture_method",
+            "selector_family",
+            "confidence",
+            "degradation_code",
+            "parsed_count",
+            "missing_count",
+          ]),
+        ) &&
+        validateExpandedMetadata(payload) &&
+        ["search", "llm"].includes(payload.parser_kind) &&
+        [
+          "missing_snippet",
+          "missing_response_text",
+          "fallback_selector",
+        ].includes(payload.degradation_code) &&
+        Number.isInteger(payload.parsed_count) &&
+        payload.parsed_count >= 0 &&
+        Number.isInteger(payload.missing_count) &&
+        payload.missing_count >= 0
+      );
     default:
       return false;
   }
@@ -688,8 +865,21 @@ export function validateEvent(event) {
     errors.push("event_id must be a non-empty string");
   }
 
-  if (event.schema_version !== SCHEMA_VERSION) {
-    errors.push(`schema_version must be ${SCHEMA_VERSION}`);
+  if (!SUPPORTED_SCHEMA_VERSIONS.includes(event.schema_version)) {
+    errors.push(
+      `schema_version must be one of ${SUPPORTED_SCHEMA_VERSIONS.join(", ")}`,
+    );
+  }
+  if (
+    [
+      "llm_response_text_observed",
+      "search_snippet_observed",
+      "search_result_full_url_observed",
+      "parser_degraded",
+    ].includes(event.event_type) &&
+    event.schema_version !== 2
+  ) {
+    errors.push("expanded study events require schema_version 2");
   }
 
   if (!EVENT_TYPE_SET.has(event.event_type)) {

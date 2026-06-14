@@ -1,13 +1,16 @@
 import { z } from "zod";
 import {
-  SCHEMA_VERSION,
+  SUPPORTED_SCHEMA_VERSIONS,
   validateEvent,
 } from "../../extension/src/shared/event-schema.mjs";
 
 const eventSchema = z
   .strictObject({
     event_id: z.string().min(1),
-    schema_version: z.literal(SCHEMA_VERSION),
+    schema_version: z.number().int().refine(
+      (value) => SUPPORTED_SCHEMA_VERSIONS.includes(value),
+      `schema_version must be one of ${SUPPORTED_SCHEMA_VERSIONS.join(", ")}`,
+    ),
     event_type: z.string().min(1),
     created_at: z.string().min(1),
     participant_id_hash: z.string().nullable(),

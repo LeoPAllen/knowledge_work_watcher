@@ -4,6 +4,7 @@ const consentDot = document.querySelector("#consent-dot");
 const captureDot = document.querySelector("#capture-dot");
 const uploadStatus = document.querySelector("#upload-status");
 const uploadDot = document.querySelector("#upload-dot");
+const queueStatus = document.querySelector("#queue-status");
 const captureAction = document.querySelector("#capture-action");
 const feedback = document.querySelector("#popup-status");
 
@@ -32,6 +33,7 @@ function render(state, sync) {
     syncing: "Uploading",
   };
   uploadStatus.textContent = uploadLabels[sync.status] ?? "Unknown";
+  queueStatus.textContent = `${sync.queued_count} queued`;
   uploadDot.dataset.state =
     sync.status === "succeeded"
       ? "active"
@@ -88,5 +90,6 @@ chrome.runtime.sendMessage({ type: "get_dashboard" })
     consentStatus.textContent = "Unavailable";
     captureStatus.textContent = "Unavailable";
     uploadStatus.textContent = "Unavailable";
+    queueStatus.textContent = "Unavailable";
     feedback.textContent = "Could not read extension state.";
   });

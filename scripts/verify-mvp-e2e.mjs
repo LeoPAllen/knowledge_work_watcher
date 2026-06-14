@@ -177,7 +177,19 @@ export async function verifyMvpE2e() {
   });
   assert.equal(etl.inputRowCount, events.length);
   assert.equal(etl.rowCounts.events_clean, events.length);
+  assert.equal(etl.rowCounts.sensitive_llm_response_text, 1);
+  assert.equal(etl.rowCounts.sensitive_search_snippets, 1);
+  assert.equal(etl.rowCounts.sensitive_search_full_urls, 1);
   assert.equal(etl.quality.warnings.length, 0);
+  const minimizedCsv = Object.entries(etl.csv)
+    .filter(([name]) => !name.startsWith("sensitive_"))
+    .map(([, content]) => content)
+    .join("\n");
+  assert.doesNotMatch(minimizedCsv, /bounded event queue/);
+  assert.doesNotMatch(
+    minimizedCsv,
+    /https:\/\/developer\.mozilla\.org\/en-US\/docs\/Mozilla/,
+  );
 
   const extensionPackage = await packageExtension(PACKAGE_PATH);
   const summary = {
@@ -196,6 +208,7 @@ export async function verifyMvpE2e() {
     privacy: {
       synthetic_data_only: true,
       minimized_private_skip_verified: true,
+      sensitive_outputs_isolated: true,
       raw_payload_logging_enabled: false,
     },
   };

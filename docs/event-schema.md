@@ -1,13 +1,13 @@
 # Event Schema
 
-Schema version 1 supports local controls and minimized navigation, search, LLM,
-and knowledge-site exposure. Broad page text is not supported.
+Schema versions 1 and 2 support local controls and scoped telemetry. Version 2
+adds explicit study-expanded events; raw DOM is never valid.
 
 ## Common Envelope
 | Field | Purpose |
 | --- | --- |
 | `event_id` | Random local event identifier |
-| `schema_version` | Contract version; currently `1` |
+| `schema_version` | Contract version; supported `1` and `2` |
 | `event_type` | Supported event name |
 | `created_at` | ISO 8601 UTC client timestamp |
 | `participant_id_hash` | Nullable future pseudonymous identifier |
@@ -17,10 +17,10 @@ and knowledge-site exposure. Broad page text is not supported.
 | `source` | Extension component, including `telemetry` |
 | `payload` | Strict event-specific object |
 
-Raw participant IDs, full URLs, response text, cookies, secrets, snippets, and
-arbitrary DOM/page content are not valid schema fields.
+Raw participant IDs, cookies, credentials, hidden fields, and arbitrary
+DOM/page content are not valid schema fields.
 
-## Version 1 Event Types
+## Event Types
 - `extension_installed`, `consent_changed`: lifecycle/consent state
 - `capture_paused`, `capture_resumed`: empty control payloads
 - `config_changed`: names of changed configuration fields, not values
@@ -31,8 +31,11 @@ arbitrary DOM/page content are not valid schema fields.
 - `search_query_observed`: engine, URL hash, and redacted-or-null query
 - `search_results_exposed`: up to 20 minimized result records
 - `search_result_clicked`: inferred rank and minimized destination
+- `search_snippet_observed`: redacted/capped visible result snippet
+- `search_result_full_url_observed`: normalized allowlisted destination URL
 - `llm_prompt_observed`: redacted-or-null prompt and turn metadata
 - `llm_response_observed`: response index/source count; no response text
+- `llm_response_text_observed`: redacted/capped visible assistant response
 - `llm_source_links_exposed`: minimized source hostname/hash records
 - `llm_interaction_metadata`: turn/source counts, tool, model, parser version
 - `knowledge_page_exposed`: category, page type, title, and URL hash
@@ -40,24 +43,24 @@ arbitrary DOM/page content are not valid schema fields.
 - `code_repo_exposed`: validated public repository URL metadata
 - `docs_page_exposed`: page/package title and up to 20 section headings
 - `parser_error`: allowlisted error code and parser metadata only
+- `parser_degraded`: safe parser health counts and confidence only
 
 Allowed page context contains only SHA-256 URL hash, hostname, session-local
 tab/window pseudonyms, and browser timestamp. The hash input is scheme, host,
 port, and path; query and fragment are excluded. Navigation may also contain
 Chrome transition type and qualifiers.
 
-Search result records contain rank, title, destination hostname/hash, and a
-conservative result type. Ads are omitted by current parsers. Query and title
-text are approved only for this prototype scope; `TODO(IRB)` before study use.
+Expanded events require schema version 2 and
+`capture_profile: "study_expanded"`. They include parser name/version,
+source domain, capture method, selector family, confidence, and capping or
+redaction metadata. Existing minimized events remain unchanged.
 
 LLM records include tool, optional model, page hash, session-local conversation
 ID, and browser context. Prompts are redacted and capped at 500 characters.
-Responses are metadata-only. Sources contain hostname/hash only. Prompt text is
-prototype-only; `TODO(IRB)` before study use.
-
-Knowledge records include title, category, page type, referrer category, and
-site-specific metadata. Q&A bodies, code, README/article text, comments, and raw
-DOM are excluded. Titles/headings are prototype-only; `TODO(IRB)` before use.
+Sources contain hostname/hash only. Response text is capped at 8,000 characters;
+snippets at 1,000; full URLs at 2,048. Full URLs strip fragments, common
+tracking fields, and credential-like parameters and require an allowed
+destination classification.
 
 ## Local Queue
 - Events are validated before append.
@@ -66,15 +69,8 @@ DOM are excluded. Titles/headings are prototype-only; `TODO(IRB)` before use.
 - Rejections retain event ID/type and safe reason, never the event payload.
 
 ## Backend Ingestion
-- Single and batch endpoints accept only schema version 1 events.
+- Single and batch endpoints accept schema versions 1 and 2.
 - The backend reuses the canonical validator and rejects unknown fields.
 - Accepted rows add server receive time and request ID without changing events.
 - SQLite stores the raw validated event JSON append-only.
 - Batch responses are validated before local queue settlement.
-
-## Versioning
-
-- Schema changes require documentation, migration consideration, and tests.
-- Unknown envelope or payload fields are rejected.
-- Text-bearing fields require an explicit privacy decision and
-  `TODO(IRB)` resolution before implementation.

@@ -1,5 +1,15 @@
 # Project History
 
+## 2026-06-14 - Study-build expanded capture
+
+- Added always-on response text, snippet, and full-result-URL study events.
+- Kept baseline consent/pause gates, allowlists, and denylist precedence.
+- Added visible-only layered selectors, redaction/caps, and safe health events.
+- Added schema v2 while retaining schema v1 ingestion and ETL compatibility.
+- Added separate sensitive ETL tables and backend validation coverage.
+- Permissions and parser host scopes are unchanged; no field toggles were added.
+- Next: complete live selector validation using externally approved study flow.
+
 ## 2026-06-14 - MVP end-to-end verification
 
 - Added a synthetic loopback E2E path through queue, upload, API, and SQLite.

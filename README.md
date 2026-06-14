@@ -11,12 +11,14 @@ allowlist-first domain policy.
 
 This repository contains a Chrome Manifest V3 extension, a local MVP ingestion
 API, and project documentation. The extension records minimized navigation,
-search, LLM, and knowledge-site events locally after consent. The Fastify API
-validates schema version 1 events and appends them to SQLite. Extension upload
+search, LLM, and knowledge-site events locally after consent. The study build
+also records visible LLM responses, search snippets, and normalized full result
+URLs on allowlisted parser domains whenever baseline capture is active. The
+Fastify API validates schema versions 1 and 2 and appends events to SQLite. Upload
 is optional, consent-gated, and active-capture-only. Local research ETL converts
-synthetic JSONL or SQLite events into sessionized CSV tables. LLM response-text
-capture and broad page capture remain absent. Only synthetic or demo data may
-be used during development.
+synthetic JSONL or SQLite events into minimized and separate sensitive CSV
+tables. Raw DOM and broad page capture remain absent. Only synthetic or demo
+data may be used during development.
 
 ## MVP Direction
 
@@ -27,9 +29,11 @@ The MVP is intended to reconstruct knowledge-work episodes from:
 - search queries and result exposure on allowlisted search domains;
 - LLM prompt/response metadata on allowlisted LLM domains; and
 - source links exposed by LLMs when available.
+- study-expanded LLM response text, search snippets, and full result URLs.
 
-Optional text capture is out of scope until explicitly allowed by a later
-decision. Real participant data must never be committed.
+Study-expanded fields are always enabled with baseline active capture; there
+are no per-field toggles. Participants should install only after the external
+study consent flow. Real participant data must never be committed.
 
 ## Principles
 

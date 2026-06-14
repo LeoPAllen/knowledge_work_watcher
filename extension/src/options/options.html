@@ -16,6 +16,11 @@
           Configuration and queued events stay local unless consent, active
           ambient capture, and upload are all enabled.
         </p>
+        <p class="intro">
+          Study build captures LLM assistant response text, search snippets,
+          and full search result URLs on allowlisted research domains.
+          Install/use only after completing the external study consent flow.
+        </p>
       </header>
 
       <form id="configuration-form">
@@ -88,8 +93,9 @@
         <p class="eyebrow">Placeholder consent</p>
         <h2 id="consent-heading">Research consent</h2>
         <p>
-          TODO(IRB): replace with approved consent language. This development
-          placeholder does not claim IRB approval.
+          External consent is handled before installation. TODO(IRB): supply
+          approved study language externally. This interface does not claim
+          IRB approval.
         </p>
         <p>
           Consent status: <strong id="consent-status">Loading...</strong>
@@ -120,8 +126,8 @@
         <p class="eyebrow">Authenticated sync</p>
         <h2 id="upload-heading">Upload status</h2>
         <p>
-          Upload uses minimized queued events only. Failed requests preserve
-          the queue and retry with bounded backoff.
+          Upload includes validated minimized and study-expanded events.
+          Failed requests preserve the queue and retry with bounded backoff.
         </p>
         <p>Upload status: <strong id="upload-status">Loading...</strong></p>
         <button id="sync-now" type="button" disabled>Sync now</button>
@@ -131,9 +137,9 @@
         <p class="eyebrow">Local storage</p>
         <h2 id="debug-heading">Event queue</h2>
         <p>
-          Inspect, export, or clear minimized queued telemetry. Synthetic event
-          creation requires local-only debug mode; exports may contain approved
-          research fields and must be handled as sensitive.
+          Inspect, export, or clear queued telemetry. Synthetic event creation
+          requires local-only debug mode; exports contain sensitive study fields
+          and must be handled accordingly.
         </p>
         <p class="queue-count" aria-live="polite">
           Queued events: <strong id="queue-count">Loading...</strong>

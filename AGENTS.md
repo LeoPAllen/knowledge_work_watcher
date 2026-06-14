@@ -4,7 +4,7 @@
 
 Knowledge Work Watcher is an ambient, privacy-preserving research browser
 extension for reconstructing knowledge-work episodes. The Chrome Manifest V3
-client has local navigation, search, LLM, and knowledge-site telemetry. Backend
+study build has scoped navigation, search, LLM, and knowledge-site telemetry. Backend
 ingestion accepts validated events into local SQLite; extension sync is
 consent-gated. Local ETL produces sessionized synthetic CSV exports.
 
@@ -41,8 +41,8 @@ consent-gated. Local ETL produces sessionized synthetic CSV exports.
 - Capture only after consent and while visible capture state is active.
 - Use an allowlist-first domain policy; private domains are excluded.
 - Never capture passwords, form fields, authentication tokens, or cookies.
-- Avoid broad DOM, page-text, screenshot, or clipboard capture.
-- Optional text capture requires a later explicit decision and approval.
+- Never add broad DOM, screenshot, clipboard, or arbitrary page-text capture.
+- Study-expanded response/snippet/URL capture stays scoped to named parsers.
 - Never commit real participant data or identifying research exports.
 - Mark all IRB-dependent statements `TODO`; do not infer approval.
 

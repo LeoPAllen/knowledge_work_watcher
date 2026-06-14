@@ -2,6 +2,14 @@ import { createEvent } from "../shared/event-schema.mjs";
 import { classifyUrl } from "../shared/privacy-filter.mjs";
 import { redactText } from "../shared/query-redaction.mjs";
 import {
+  LLM_RESPONSE_TEXT_LIMIT,
+  sanitizeSensitiveText,
+} from "../shared/sensitive-data.mjs";
+import {
+  expandedCaptureEnabled,
+  STUDY_BUILD_POLICY,
+} from "../shared/study-build-policy.mjs";
+import {
   hashAllowedUrl,
   pseudonymizeBrowserId,
   pseudonymizeConversationId,
@@ -18,6 +26,15 @@ const ERROR_CODES = new Set([
   "unsupported_llm_page",
   "conversation_root_missing",
   "parse_failed",
+]);
+const PARSER_VERSION = 2;
+const PARSER_NAME = "kww_llm_visible_text";
+const CONFIDENCE = new Set(["high", "medium", "low"]);
+const SELECTOR_FAMILY = new Set([
+  "canonical",
+  "fallback",
+  "semantic",
+  "none",
 ]);
 
 function isActive(context) {
@@ -146,18 +163,21 @@ export function createLlmTelemetry({
 
     async onPageParsed(parsed, sender) {
       const scoped = await scopedContext(sender, parsed?.tool);
-      if (!scoped || parsed?.parser_version !== 1) {
+      if (!scoped || parsed?.parser_version !== PARSER_VERSION) {
         return;
       }
       const key = `${scoped.context.session_id}:${scoped.conversationId}`;
       const stored = observed.get(key) ?? {
         promptCount: 0,
         responseCount: 0,
+        responseTextSignatures: new Map(),
         sourceSignatures: new Map(),
         metadataSignature: null,
+        healthSignature: null,
       };
       const previous = {
         ...stored,
+        responseTextSignatures: new Map(stored.responseTextSignatures),
         sourceSignatures: new Map(stored.sourceSignatures),
       };
       const modelName = safeModelName(parsed.model_name);
@@ -208,6 +228,55 @@ export function createLlmTelemetry({
             return;
           }
         }
+        const responseText = sanitizeSensitiveText(
+          response.text,
+          LLM_RESPONSE_TEXT_LIMIT,
+        );
+        const selectorFamily = SELECTOR_FAMILY.has(response.selector_family)
+          ? response.selector_family
+          : "none";
+        const confidence = CONFIDENCE.has(response.confidence)
+          ? response.confidence
+          : "low";
+        const responseTextSignature = responseText
+          ? JSON.stringify([response.response_index, responseText])
+          : null;
+        if (
+          expandedCaptureEnabled(scoped.context) &&
+          responseText &&
+          previous.responseTextSignatures.get(response.response_index) !==
+            responseTextSignature
+        ) {
+          if (
+            !(await append(
+              scoped.context,
+              "llm_response_text_observed",
+              {
+                ...base,
+                model_name: modelName,
+                response_index: response.response_index,
+                response_text: responseText.text,
+                char_count_original: responseText.char_count_original,
+                char_count_stored: responseText.char_count_stored,
+                truncated: responseText.truncated,
+                redaction_applied: responseText.redaction_applied,
+                capture_profile: STUDY_BUILD_POLICY.capture_profile,
+                parser_name: PARSER_NAME,
+                parser_version: PARSER_VERSION,
+                source_domain: scoped.page.hostname,
+                capture_method: "visible_dom_text",
+                selector_family: selectorFamily,
+                confidence,
+              },
+            ))
+          ) {
+            return;
+          }
+          previous.responseTextSignatures.set(
+            response.response_index,
+            responseTextSignature,
+          );
+        }
         const signature = JSON.stringify(sources);
         if (
           sources.length > 0 &&
@@ -241,11 +310,52 @@ export function createLlmTelemetry({
             prompt_count: prompts.length,
             response_count: responses.length,
             source_count: totalSources,
-            parser_version: 1,
+            parser_version: PARSER_VERSION,
           }))
         ) {
           return;
         }
+      }
+      const health = parsed.health ?? {};
+      const missingCount = Number.isInteger(health.missing_response_text_count)
+        ? health.missing_response_text_count
+        : 0;
+      const degradedCount = Number.isInteger(health.degraded_count)
+        ? health.degraded_count
+        : 0;
+      const healthSignature = JSON.stringify([
+        missingCount,
+        degradedCount,
+        health.parsed_count,
+        parsed.selector_family,
+        parsed.confidence,
+      ]);
+      if (
+        (missingCount > 0 || degradedCount > 0) &&
+        healthSignature !== previous.healthSignature
+      ) {
+        await append(scoped.context, "parser_degraded", {
+          capture_profile: STUDY_BUILD_POLICY.capture_profile,
+          parser_kind: "llm",
+          parser_name: PARSER_NAME,
+          parser_version: PARSER_VERSION,
+          source_domain: scoped.page.hostname,
+          capture_method: "visible_dom_text",
+          selector_family: SELECTOR_FAMILY.has(parsed.selector_family)
+            ? parsed.selector_family
+            : "none",
+          confidence: CONFIDENCE.has(parsed.confidence)
+            ? parsed.confidence
+            : "low",
+          degradation_code:
+            missingCount > 0
+              ? "missing_response_text"
+              : "fallback_selector",
+          parsed_count: Number.isInteger(health.parsed_count)
+            ? health.parsed_count
+            : responses.length,
+          missing_count: missingCount,
+        });
       }
       observed.set(key, {
         promptCount: Math.max(
@@ -256,8 +366,10 @@ export function createLlmTelemetry({
           previous.responseCount,
           ...responses.map((response) => response.response_index ?? 0),
         ),
+        responseTextSignatures: previous.responseTextSignatures,
         sourceSignatures: previous.sourceSignatures,
         metadataSignature,
+        healthSignature,
       });
     },
 
@@ -276,7 +388,7 @@ export function createLlmTelemetry({
         !scoped ||
         message.stage !== "parse" ||
         !ERROR_CODES.has(message.code) ||
-        message.parserVersion !== 1
+        message.parserVersion !== PARSER_VERSION
       ) {
         return;
       }
@@ -286,7 +398,7 @@ export function createLlmTelemetry({
         parser_kind: "llm",
         parser_stage: "parse",
         error_code: message.code,
-        parser_version: 1,
+        parser_version: PARSER_VERSION,
       });
     },
   };

@@ -52,7 +52,155 @@ test("health and schema version endpoints return request IDs", async (t) => {
     url: "/v1/schema/version",
   });
   assert.equal(schema.statusCode, 200);
-  assert.equal(schema.json().schema_version, 1);
+  assert.equal(schema.json().schema_version, 2);
+});
+
+function expandedEvents() {
+  const searchContext = {
+    page_url_hash: "b".repeat(64),
+    search_hostname: "www.google.com",
+    tab_id: `tab_${"c".repeat(64)}`,
+    window_id: `window_${"d".repeat(64)}`,
+    browser_timestamp: 1,
+    search_engine: "google",
+  };
+  const llmContext = {
+    page_url_hash: "e".repeat(64),
+    llm_hostname: "chatgpt.com",
+    tab_id: `tab_${"c".repeat(64)}`,
+    window_id: `window_${"d".repeat(64)}`,
+    conversation_id: `conversation_${"f".repeat(64)}`,
+    browser_timestamp: 1,
+    llm_tool: "chatgpt",
+    model_name: "GPT Synthetic",
+  };
+  const metadata = {
+    capture_profile: "study_expanded",
+    parser_version: 2,
+    capture_method: "visible_dom_text",
+    selector_family: "canonical",
+    confidence: "high",
+  };
+  return [
+    createEvent({
+      eventType: "llm_response_text_observed",
+      extensionVersion: "0.1.0",
+      captureMode: "ambient",
+      source: "llm_parser",
+      participantIdHash: "a".repeat(64),
+      sessionId: "session-1",
+      eventId: "expanded-llm",
+      createdAt: "2026-06-13T11:59:00.000Z",
+      payload: {
+        ...llmContext,
+        ...metadata,
+        parser_name: "kww_llm_visible_text",
+        source_domain: "chatgpt.com",
+        response_index: 1,
+        response_text: "Visible assistant response",
+        char_count_original: 26,
+        char_count_stored: 26,
+        truncated: false,
+        redaction_applied: false,
+      },
+    }),
+    createEvent({
+      eventType: "search_snippet_observed",
+      extensionVersion: "0.1.0",
+      captureMode: "ambient",
+      source: "search_parser",
+      participantIdHash: "a".repeat(64),
+      sessionId: "session-1",
+      eventId: "expanded-snippet",
+      createdAt: "2026-06-13T11:59:01.000Z",
+      payload: {
+        ...searchContext,
+        ...metadata,
+        parser_name: "kww_search_visible_results",
+        source_domain: "www.google.com",
+        rank: 1,
+        title: "Synthetic result",
+        destination_hostname: "developer.mozilla.org",
+        destination_url_hash: "f".repeat(64),
+        result_type: "organic",
+        snippet_text: "Visible snippet",
+        char_count_original: 15,
+        char_count_stored: 15,
+        truncated: false,
+        redaction_applied: false,
+      },
+    }),
+    createEvent({
+      eventType: "search_result_full_url_observed",
+      extensionVersion: "0.1.0",
+      captureMode: "ambient",
+      source: "search_parser",
+      participantIdHash: "a".repeat(64),
+      sessionId: "session-1",
+      eventId: "expanded-url",
+      createdAt: "2026-06-13T11:59:02.000Z",
+      payload: {
+        ...searchContext,
+        ...metadata,
+        parser_name: "kww_search_visible_results",
+        source_domain: "www.google.com",
+        rank: 1,
+        destination_hostname: "developer.mozilla.org",
+        destination_url_hash: "f".repeat(64),
+        destination_url: "https://developer.mozilla.org/en-US/docs/Web/API",
+        result_type: "organic",
+        full_url_storage_enabled: true,
+      },
+    }),
+  ];
+}
+
+test("accepts all valid expanded study-build events", async (t) => {
+  const storage = new EventStorage(":memory:");
+  const app = buildApp({ config: config(), storage });
+  t.after(() => app.close());
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/events/batch",
+    headers: authorization(),
+    payload: { events: expandedEvents() },
+  });
+
+  assert.equal(response.statusCode, 202);
+  assert.equal(response.json().accepted, 3);
+  assert.equal(response.json().rejected, 0);
+  assert.equal(
+    storage.database.prepare("SELECT COUNT(*) AS count FROM raw_events").get()
+      .count,
+    3,
+  );
+});
+
+test("rejects malformed expanded text and full URL payloads", async (t) => {
+  const storage = new EventStorage(":memory:");
+  const app = buildApp({ config: config(), storage });
+  t.after(() => app.close());
+  const [responseText, , fullUrl] = expandedEvents();
+  responseText.payload.response_text = "api_key=unredacted-value";
+  fullUrl.payload.destination_url =
+    "https://mail.google.com/mail/u/0/?token=unredacted";
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/events/batch",
+    headers: authorization(),
+    payload: { events: [responseText, fullUrl] },
+  });
+
+  assert.equal(response.statusCode, 202);
+  assert.equal(response.json().accepted, 0);
+  assert.equal(response.json().rejected, 2);
+  assert.equal(
+    storage.database.prepare("SELECT COUNT(*) AS count FROM raw_events").get()
+      .count,
+    0,
+  );
 });
 
 test("accepts and appends a valid event with server metadata", async (t) => {
@@ -80,6 +228,29 @@ test("accepts and appends a valid event with server metadata", async (t) => {
   assert.equal(row.received_at, RECEIVED_AT);
   assert.equal(row.request_id, response.json().request_id);
   assert.deepEqual(JSON.parse(row.raw_event_json), event());
+});
+
+test("retains schema version 1 ingestion compatibility", async (t) => {
+  const storage = new EventStorage(":memory:");
+  const app = buildApp({ config: config(), storage });
+  t.after(() => app.close());
+  const legacy = event({ event_id: "legacy-schema-event" });
+  legacy.schema_version = 1;
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/events",
+    headers: authorization(),
+    payload: legacy,
+  });
+
+  assert.equal(response.statusCode, 202);
+  assert.equal(
+    storage.database
+      .prepare("SELECT schema_version FROM raw_events")
+      .get().schema_version,
+    1,
+  );
 });
 
 test("rejects malformed events without storage", async (t) => {

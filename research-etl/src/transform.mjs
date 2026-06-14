@@ -20,6 +20,11 @@ const KNOWLEDGE_TYPES = new Set([
   "code_repo_exposed",
   "docs_page_exposed",
 ]);
+const SENSITIVE_TYPES = new Set([
+  "llm_response_text_observed",
+  "search_snippet_observed",
+  "search_result_full_url_observed",
+]);
 
 function first(payload, fields) {
   for (const field of fields) {
@@ -102,6 +107,9 @@ function hostnameToSource(value) {
 
 export function sourceTypeFor(record) {
   const { event } = record;
+  if (SENSITIVE_TYPES.has(event.event_type)) {
+    return event.event_type.startsWith("llm_") ? "llm" : "search";
+  }
   if (SEARCH_TYPES.has(event.event_type)) {
     return "search";
   }
@@ -635,6 +643,114 @@ function solutionTrace(records, searchRows, llmRows) {
     });
 }
 
+const SENSITIVE_LLM_COLUMNS = [
+  "event_id",
+  "activity_session_id",
+  "participant_id_hash",
+  "extension_session_id",
+  "created_at",
+  "received_at",
+  "conversation_id",
+  "llm_tool",
+  "model_name",
+  "response_index",
+  "response_text",
+  "char_count_original",
+  "char_count_stored",
+  "truncated",
+  "redaction_applied",
+  "capture_profile",
+  "parser_name",
+  "parser_version",
+  "source_domain",
+  "capture_method",
+  "selector_family",
+  "confidence",
+];
+
+function sensitiveLlmResponseText(records) {
+  return records
+    .filter(
+      (record) =>
+        record.event.event_type === "llm_response_text_observed",
+    )
+    .map((record) => ({
+      ...baseRow(record),
+      ...record.event.payload,
+    }));
+}
+
+const SENSITIVE_SEARCH_SNIPPET_COLUMNS = [
+  "event_id",
+  "activity_session_id",
+  "participant_id_hash",
+  "extension_session_id",
+  "created_at",
+  "received_at",
+  "search_engine",
+  "rank",
+  "title",
+  "destination_hostname",
+  "destination_url_hash",
+  "result_type",
+  "snippet_text",
+  "char_count_original",
+  "char_count_stored",
+  "truncated",
+  "redaction_applied",
+  "capture_profile",
+  "parser_name",
+  "parser_version",
+  "source_domain",
+  "capture_method",
+  "selector_family",
+  "confidence",
+];
+
+function sensitiveSearchSnippets(records) {
+  return records
+    .filter((record) => record.event.event_type === "search_snippet_observed")
+    .map((record) => ({
+      ...baseRow(record),
+      ...record.event.payload,
+    }));
+}
+
+const SENSITIVE_SEARCH_URL_COLUMNS = [
+  "event_id",
+  "activity_session_id",
+  "participant_id_hash",
+  "extension_session_id",
+  "created_at",
+  "received_at",
+  "search_engine",
+  "rank",
+  "destination_hostname",
+  "destination_url_hash",
+  "destination_url",
+  "result_type",
+  "full_url_storage_enabled",
+  "capture_profile",
+  "parser_name",
+  "parser_version",
+  "source_domain",
+  "capture_method",
+  "selector_family",
+  "confidence",
+];
+
+function sensitiveSearchFullUrls(records) {
+  return records
+    .filter(
+      (record) =>
+        record.event.event_type === "search_result_full_url_observed",
+    )
+    .map((record) => ({
+      ...baseRow(record),
+      ...record.event.payload,
+    }));
+}
+
 export function transformRecords(
   records,
   { linkWindowMinutes = DEFAULT_LINK_WINDOW_MINUTES } = {},
@@ -674,6 +790,18 @@ export function transformRecords(
     solution_assembly_trace: {
       columns: TRACE_COLUMNS,
       rows: solutionTrace(records, searchRows, llmRows),
+    },
+    sensitive_llm_response_text: {
+      columns: SENSITIVE_LLM_COLUMNS,
+      rows: sensitiveLlmResponseText(records),
+    },
+    sensitive_search_snippets: {
+      columns: SENSITIVE_SEARCH_SNIPPET_COLUMNS,
+      rows: sensitiveSearchSnippets(records),
+    },
+    sensitive_search_full_urls: {
+      columns: SENSITIVE_SEARCH_URL_COLUMNS,
+      rows: sensitiveSearchFullUrls(records),
     },
   };
   return tables;
