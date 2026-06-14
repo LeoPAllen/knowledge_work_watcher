@@ -50,6 +50,15 @@
 - Sessionize by participant/session and bounded inactivity.
 - Export deterministic synthetic CSV tables with privacy quality checks.
 
+## MVP Verification Status
+
+- Automated synthetic E2E covers queue, authenticated HTTP batch upload,
+  append-only SQLite, ETL outputs, privacy assertions, and extension packaging.
+- Chrome unpacked loading, controls, runtime permission, and live selectors
+  remain explicit manual checks before a study build.
+- No real participant data, production deployment, or study enrollment is
+  included.
+
 ## Deferred
 
 - Production authentication and deployment

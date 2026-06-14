@@ -57,10 +57,15 @@ Requires Node.js 24 and the standard `zip`/`unzip` commands.
 npm ci                    # install locked dependencies
 npm test                  # extension, backend, ETL, and workflow tests
 npm run check             # manifest, permissions, secrets, and data paths
+npm run verify:e2e        # queue, upload, SQLite, ETL, and package verification
 npm run backend:start     # run the configured local ingestion API
 npm run etl:synthetic     # generate synthetic inputs and CSV exports
 npm run package:extension # create dist/knowledge-work-watcher-0.1.0.zip
 ```
+
+The E2E command uses only reviewed synthetic events and loopback networking. It
+writes ignored verification artifacts under `backend/data/`,
+`research-exports/e2e/`, and `dist/`.
 
 For the backend, copy `.env.example` to ignored `.env`, load its variables, and
 use a synthetic token. Load `extension/` unpacked from `chrome://extensions`.

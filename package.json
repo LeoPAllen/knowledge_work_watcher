@@ -16,7 +16,8 @@
     "test:backend": "node --test backend/tests/*.test.mjs",
     "test:etl": "node --test research-etl/tests/*.test.mjs",
     "test:extension": "node --test extension/tests/*.test.mjs",
-    "test:workflow": "node --test scripts/tests/*.test.mjs"
+    "test:workflow": "node --test scripts/tests/*.test.mjs",
+    "verify:e2e": "node scripts/verify-mvp-e2e.mjs"
   },
   "devDependencies": {
     "linkedom": "^0.18.12"
