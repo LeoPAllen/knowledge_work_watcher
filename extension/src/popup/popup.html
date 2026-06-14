@@ -36,10 +36,19 @@
             <span id="upload-status">Loading...</span>
           </dd>
         </div>
+        <div class="status-row">
+          <dt>Local queue</dt>
+          <dd><span id="queue-status">Loading...</span></dd>
+        </div>
       </dl>
 
       <p class="notice">
-        Upload runs only while consented, enabled, and actively capturing.
+        Study build captures LLM assistant response text, search snippets, and
+        full search result URLs on allowlisted research domains.
+      </p>
+      <p class="notice">
+        Install/use only after completing the external study consent flow.
+        Global pause or revoke stops capture.
       </p>
       <button id="capture-action" type="button" hidden></button>
       <button id="open-options" type="button">Open options</button>

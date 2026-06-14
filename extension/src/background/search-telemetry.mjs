@@ -2,6 +2,15 @@ import { createEvent } from "../shared/event-schema.mjs";
 import { classifyUrl } from "../shared/privacy-filter.mjs";
 import { redactSearchQuery } from "../shared/query-redaction.mjs";
 import {
+  normalizeSearchResultUrl,
+  sanitizeSensitiveText,
+  SEARCH_SNIPPET_TEXT_LIMIT,
+} from "../shared/sensitive-data.mjs";
+import {
+  expandedCaptureEnabled,
+  STUDY_BUILD_POLICY,
+} from "../shared/study-build-policy.mjs";
+import {
   hashAllowedUrl,
   pseudonymizeBrowserId,
 } from "../shared/telemetry-identifiers.mjs";
@@ -15,6 +24,15 @@ const ERROR_CODES = new Set([
   "unsupported_search_page",
   "results_root_missing",
   "parse_failed",
+]);
+const PARSER_VERSION = 2;
+const PARSER_NAME = "kww_search_visible_results";
+const CONFIDENCE = new Set(["high", "medium", "low"]);
+const SELECTOR_FAMILY = new Set([
+  "canonical",
+  "fallback",
+  "semantic",
+  "none",
 ]);
 
 function isActive(context) {
@@ -63,6 +81,8 @@ export function createSearchTelemetry({
   hashUrl = hashAllowedUrl,
   pseudonymize = pseudonymizeBrowserId,
 }) {
+  const healthSignatures = new Map();
+
   async function contextFor(sender, engine) {
     const context = await stateController.getTelemetryContext();
     const page = validatedSearchPage(sender.url, engine);
@@ -134,6 +154,32 @@ export function createSearchTelemetry({
     };
   }
 
+  async function expandedResult(result) {
+    const minimized = await minimizeResult(result);
+    if (!minimized) {
+      return null;
+    }
+    const snippet = sanitizeSensitiveText(
+      result.snippet,
+      SEARCH_SNIPPET_TEXT_LIMIT,
+    );
+    const normalizedUrl = normalizeSearchResultUrl(result.url);
+    const classification = normalizedUrl
+      ? classifyUrl(normalizedUrl).classification
+      : "invalid";
+    return {
+      minimized,
+      snippet,
+      fullUrl: classification === "allowed" ? normalizedUrl : null,
+      selectorFamily: SELECTOR_FAMILY.has(result.selector_family)
+        ? result.selector_family
+        : "none",
+      confidence: CONFIDENCE.has(result.confidence)
+        ? result.confidence
+        : "low",
+    };
+  }
+
   return {
     async isCaptureActive() {
       return isActive(await stateController.getTelemetryContext());
@@ -141,7 +187,7 @@ export function createSearchTelemetry({
 
     async onPageParsed(parsed, sender) {
       const scoped = await contextFor(sender, parsed?.engine);
-      if (!scoped || parsed?.parser_version !== 1) {
+      if (!scoped || parsed?.parser_version !== PARSER_VERSION) {
         return;
       }
       const timestamp = Date.now();
@@ -161,10 +207,12 @@ export function createSearchTelemetry({
       });
 
       const results = [];
+      const expanded = [];
       for (const result of Array.isArray(parsed.results) ? parsed.results : []) {
-        const minimized = await minimizeResult(result);
-        if (minimized) {
-          results.push(minimized);
+        const processed = await expandedResult(result);
+        if (processed) {
+          results.push(processed.minimized);
+          expanded.push(processed);
         }
         if (results.length === 20) {
           break;
@@ -175,6 +223,95 @@ export function createSearchTelemetry({
         search_engine: parsed.engine,
         results,
       });
+      if (expandedCaptureEnabled(scoped.context)) {
+        for (const item of expanded) {
+          const metadata = {
+            capture_profile: STUDY_BUILD_POLICY.capture_profile,
+            parser_name: PARSER_NAME,
+            parser_version: PARSER_VERSION,
+            source_domain: scoped.page.hostname,
+            capture_method: "visible_dom_text",
+            selector_family: item.selectorFamily,
+            confidence: item.confidence,
+          };
+          if (item.snippet) {
+            await append(scoped.context, "search_snippet_observed", {
+              ...common,
+              search_engine: parsed.engine,
+              ...metadata,
+              rank: item.minimized.rank,
+              title: item.minimized.title,
+              destination_hostname: item.minimized.destination_hostname,
+              destination_url_hash: item.minimized.destination_url_hash,
+              result_type: item.minimized.result_type,
+              snippet_text: item.snippet.text,
+              char_count_original: item.snippet.char_count_original,
+              char_count_stored: item.snippet.char_count_stored,
+              truncated: item.snippet.truncated,
+              redaction_applied: item.snippet.redaction_applied,
+            });
+          }
+          if (item.fullUrl) {
+            await append(
+              scoped.context,
+              "search_result_full_url_observed",
+              {
+                ...common,
+                search_engine: parsed.engine,
+                ...metadata,
+                rank: item.minimized.rank,
+                destination_hostname: item.minimized.destination_hostname,
+                destination_url_hash: item.minimized.destination_url_hash,
+                destination_url: item.fullUrl,
+                result_type: item.minimized.result_type,
+                full_url_storage_enabled: true,
+              },
+            );
+          }
+        }
+      }
+
+      const health = parsed.health ?? {};
+      const missingCount = Number.isInteger(health.missing_snippet_count)
+        ? health.missing_snippet_count
+        : 0;
+      const degradedCount = Number.isInteger(health.degraded_count)
+        ? health.degraded_count
+        : 0;
+      const healthKey = `${scoped.context.session_id}:${common.page_url_hash}`;
+      const healthSignature = JSON.stringify([
+        missingCount,
+        degradedCount,
+        health.parsed_count,
+        parsed.selector_family,
+        parsed.confidence,
+      ]);
+      if (
+        (missingCount > 0 || degradedCount > 0) &&
+        healthSignatures.get(healthKey) !== healthSignature
+      ) {
+        await append(scoped.context, "parser_degraded", {
+          capture_profile: STUDY_BUILD_POLICY.capture_profile,
+          parser_kind: "search",
+          parser_name: PARSER_NAME,
+          parser_version: PARSER_VERSION,
+          source_domain: scoped.page.hostname,
+          capture_method: "visible_dom_text",
+          selector_family: SELECTOR_FAMILY.has(parsed.selector_family)
+            ? parsed.selector_family
+            : "none",
+          confidence: CONFIDENCE.has(parsed.confidence)
+            ? parsed.confidence
+            : "low",
+          degradation_code:
+            missingCount > 0 ? "missing_snippet" : "fallback_selector",
+          parsed_count: Number.isInteger(health.parsed_count)
+            ? health.parsed_count
+            : results.length,
+          missing_count: missingCount,
+        });
+        healthSignatures.set(healthKey, healthSignature);
+      }
     },
 
     async onResultClicked(clicked, sender) {
@@ -218,7 +355,7 @@ export function createSearchTelemetry({
         !scoped ||
         message.stage !== "parse" ||
         !ERROR_CODES.has(message.code) ||
-        message.parserVersion !== 1
+        message.parserVersion !== PARSER_VERSION
       ) {
         return;
       }
@@ -233,7 +370,7 @@ export function createSearchTelemetry({
         search_engine: engine,
         parser_stage: "parse",
         error_code: message.code,
-        parser_version: 1,
+        parser_version: PARSER_VERSION,
       });
     },
   };

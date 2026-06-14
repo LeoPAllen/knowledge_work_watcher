@@ -1,6 +1,6 @@
 # Backend
 
-The MVP backend validates schema version 1 events and appends accepted records
+The MVP backend validates schema version 1 and 2 events and appends accepted records
 to local SQLite storage. It does not provide upload retries, participant
 enrollment, event queries, deletion, ETL, or production authentication.
 

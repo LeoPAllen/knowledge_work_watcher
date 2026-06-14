@@ -1,35 +1,39 @@
 (function defineSearchParser(global) {
   "use strict";
 
-  const PARSER_VERSION = 1;
+  const PARSER_VERSION = 2;
+  const PARSER_NAME = "kww_search_visible_results";
   const MAX_RESULTS = 20;
   const MAX_TITLE_LENGTH = 300;
   const ENGINE_CONFIG = Object.freeze({
     google: {
       hostname: "www.google.com",
       path: "/search",
-      root: "#search",
-      result: ".g",
-      link: "a",
-      title: "h3",
+      roots: ["#search", 'main[role="main"]'],
+      results: [".g", '[data-snhf]'],
+      links: ["a:has(h3)", "a"],
+      titles: ["h3", '[role="heading"]'],
+      snippets: [".VwiC3b", ".snippet", '[data-sncf]'],
       excluded: ".uEierd",
     },
     bing: {
       hostname: "www.bing.com",
       path: "/search",
-      root: "#b_results",
-      result: ".b_algo",
-      link: "h2 a",
-      title: "h2",
+      roots: ["#b_results", 'main[aria-label*="Search" i]'],
+      results: [".b_algo", 'li[data-bm]'],
+      links: ["h2 a", 'a[href]'],
+      titles: ["h2", '[role="heading"]'],
+      snippets: [".b_caption p", ".b_snippet", "p"],
       excluded: ".b_ad",
     },
     duckduckgo: {
       hostname: "duckduckgo.com",
       paths: ["/", "/html/"],
-      root: "#links",
-      result: ".result",
-      link: "a.result__a",
-      title: "a.result__a",
+      roots: ["#links", 'main'],
+      results: [".result", '[data-testid="result"]'],
+      links: ["a.result__a", '[data-testid="result-title-a"]'],
+      titles: ["a.result__a", '[data-testid="result-title-a"]'],
+      snippets: [".result__snippet", '[data-result="snippet"]'],
       excluded: ".result--ad",
     },
   });
@@ -56,6 +60,66 @@
     return value.replace(/\s+/g, " ").trim().slice(0, MAX_TITLE_LENGTH);
   }
 
+  function cleanSnippet(value) {
+    return value.replace(/\s+/g, " ").trim().slice(0, 4000);
+  }
+
+  const EXCLUDED =
+    'script, style, template, input, textarea, select, option, [hidden], [aria-hidden="true"], [inert], [data-testid*="profile"], [aria-label*="profile" i]';
+
+  function visibleText(node) {
+    if (!node) {
+      return "";
+    }
+    if (node.nodeType === 3) {
+      return node.nodeValue ?? "";
+    }
+    if (node.nodeType !== 1 || node.matches?.(EXCLUDED)) {
+      return "";
+    }
+    const style = node.getAttribute?.("style")?.toLowerCase() ?? "";
+    if (style.includes("display:none") || style.includes("visibility:hidden")) {
+      return "";
+    }
+    const computed = global.getComputedStyle?.(node);
+    if (
+      computed?.display === "none" ||
+      computed?.visibility === "hidden"
+    ) {
+      return "";
+    }
+    return [...node.childNodes].map(visibleText).join(" ");
+  }
+
+  function firstMatch(root, selectors) {
+    for (let index = 0; index < selectors.length; index += 1) {
+      const node = root.querySelector(selectors[index]);
+      if (node) {
+        return {
+          node,
+          selector_family:
+            index === 0 ? "canonical" : index === 1 ? "fallback" : "semantic",
+          confidence: index === 0 ? "high" : index === 1 ? "medium" : "low",
+        };
+      }
+    }
+    return null;
+  }
+
+  function allMatches(root, selectors) {
+    for (let index = 0; index < selectors.length; index += 1) {
+      const nodes = [...root.querySelectorAll(selectors[index])];
+      if (nodes.length > 0) {
+        return {
+          nodes,
+          selector_family: index === 0 ? "canonical" : "fallback",
+          confidence: index === 0 ? "high" : "medium",
+        };
+      }
+    }
+    return { nodes: [], selector_family: "none", confidence: "low" };
+  }
+
   function queryForUrl(input) {
     const query = new URL(input).searchParams.get("q");
     return query === null ? null : query.replace(/\s+/g, " ").trim();
@@ -73,7 +137,7 @@
   }
 
   function resultRoot(document, engine) {
-    return document.querySelector(ENGINE_CONFIG[engine].root);
+    return firstMatch(document, ENGINE_CONFIG[engine].roots)?.node ?? null;
   }
 
   function parseSearchPage(document, pageUrl) {
@@ -89,16 +153,20 @@
     }
 
     const results = [];
-    for (const container of root.querySelectorAll(config.result)) {
+    const resultMatch = allMatches(root, config.results);
+    for (const container of resultMatch.nodes) {
       if (container.matches(config.excluded)) {
         continue;
       }
-      const link = container.querySelector(config.link);
-      const titleNode = container.querySelector(config.title);
+      const linkMatch = firstMatch(container, config.links);
+      const titleMatch = firstMatch(container, config.titles);
+      const snippetMatch = firstMatch(container, config.snippets);
+      const link = linkMatch?.node;
+      const titleNode = titleMatch?.node;
       if (!link?.href || !titleNode) {
         continue;
       }
-      const title = cleanText(titleNode.textContent ?? "");
+      const title = cleanText(visibleText(titleNode));
       if (!title) {
         continue;
       }
@@ -107,6 +175,10 @@
         title,
         url: destinationUrl(link.href, engine),
         result_type: "organic",
+        snippet: snippetMatch ? cleanSnippet(visibleText(snippetMatch.node)) : null,
+        selector_family:
+          snippetMatch?.selector_family ?? resultMatch.selector_family,
+        confidence: snippetMatch?.confidence ?? "low",
       });
       if (results.length === MAX_RESULTS) {
         break;
@@ -119,6 +191,20 @@
       query: queryForUrl(pageUrl),
       results,
       parser_version: PARSER_VERSION,
+      parser_name: PARSER_NAME,
+      capture_method: "visible_dom_text",
+      selector_family: resultMatch.selector_family,
+      confidence: resultMatch.confidence,
+      health: {
+        parsed_count: results.length,
+        missing_snippet_count: results.filter((result) => !result.snippet)
+          .length,
+        degraded_count:
+          resultMatch.confidence === "high" &&
+          results.every((result) => result.confidence === "high")
+            ? 0
+            : 1,
+      },
     };
   }
 
@@ -129,7 +215,7 @@
       return null;
     }
     const root = resultRoot(document, engine);
-    const container = target?.closest?.(config.result);
+    const container = target?.closest?.(config.results.join(","));
     if (!root || !container || !root.contains(container)) {
       return null;
     }
@@ -137,18 +223,18 @@
       return null;
     }
     const link = target.closest("a");
-    const resultLink = container.querySelector(config.link);
+    const resultLink = firstMatch(container, config.links)?.node;
     if (!link || link !== resultLink || !link.href) {
       return null;
     }
-    const containers = [...root.querySelectorAll(config.result)].filter(
+    const containers = allMatches(root, config.results).nodes.filter(
       (candidate) => {
-        const candidateLink = candidate.querySelector(config.link);
-        const candidateTitle = candidate.querySelector(config.title);
+        const candidateLink = firstMatch(candidate, config.links)?.node;
+        const candidateTitle = firstMatch(candidate, config.titles)?.node;
         return (
           !candidate.matches(config.excluded) &&
           candidateLink?.href &&
-          cleanText(candidateTitle?.textContent ?? "")
+          cleanText(visibleText(candidateTitle))
         );
       },
     );
@@ -160,6 +246,7 @@
 
   global.KWWSearchParser = Object.freeze({
     PARSER_VERSION,
+    PARSER_NAME,
     engineForUrl,
     parseSearchPage,
     resultRoot,

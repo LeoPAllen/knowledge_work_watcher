@@ -16,7 +16,8 @@ episodes without beginning with broad content capture or backend complexity.
 - Queue minimized events locally before any future upload.
 - Target navigation, focus, search/LLM exposure, LLM source links, and
   downstream navigation.
-- Keep optional text capture disabled unless explicitly approved later.
+- Permit explicit study-expanded response/snippet/URL events under baseline
+  gates; broad or arbitrary text capture remains prohibited.
 - Defer backend ingestion and research ETL.
 - Use synthetic/demo data only; never commit real participant data.
 - Mark IRB-dependent requirements `TODO` rather than asserting them.

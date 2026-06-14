@@ -4,7 +4,9 @@
 
 A minimal extension exists under `extension/`. It includes Manifest V3 controls,
 local persistence, a URL privacy filter, minimized navigation telemetry, and
-scoped search, LLM, and knowledge-site parsers. An MVP Fastify API validates
+scoped search, LLM, and knowledge-site parsers. The study profile adds explicit
+response-text, snippet, and full-result-URL events without per-field toggles.
+An MVP Fastify API validates
 events and stores them append-only in local SQLite. The extension does not
 upload unless the participant enables sync. Local ETL validates and sessionizes
 synthetic JSONL or SQLite events into analysis-ready CSV tables.
@@ -33,8 +35,8 @@ synthetic JSONL or SQLite events into analysis-ready CSV tables.
    - Exposes consent state and visible pause/resume controls.
    - Applies an allowlist-first domain policy before local capture.
 2. **Site adapters**
-   - Search adapters produce minimal structured events for three named domains.
-   - LLM adapters produce prompts, metadata, and source links without responses.
+   - Search adapters produce minimized events plus separate snippet/URL events.
+   - LLM adapters produce minimized metadata plus separate response-text events.
    - Knowledge adapters expose titles/headings and structured public metadata.
    - Avoid broad DOM or page capture.
 3. **Privacy filter**
@@ -47,16 +49,16 @@ synthetic JSONL or SQLite events into analysis-ready CSV tables.
    - Retention, encryption, and deletion behavior are `TODO` pending study and
      IRB requirements.
 5. **Backend ingestion**
-   - Accepts authenticated schema v1 single or batch event requests.
+   - Accepts authenticated schema v1/v2 single or batch event requests.
    - Adds request ID/receive time and stores immutable raw event JSON in SQLite.
    - Uses a shared study token placeholder; production auth remains deferred.
 6. **Research ETL**
    - Reads version 1 JSONL or SQLite events and fails closed on quality checks.
-   - Writes deterministic clean, exposure, episode, navigation, and trace CSVs.
+   - Writes minimized analysis tables and three separate sensitive CSVs.
 
 ## Event Flow
 
-`signal -> consent/filter -> minimization -> local queue`
+`signal -> baseline gate/filter -> visible extraction -> redaction/cap -> queue`
 
 `active upload -> bearer auth -> validation -> append-only SQLite`
 
@@ -68,5 +70,5 @@ Upload is off by default and stops while paused or after consent revocation.
 
 - No private-domain capture.
 - No password, form-field, cookie, or token capture.
-- No optional text capture without a later explicit decision.
+- No broad DOM, hidden-node, upload, attachment, or arbitrary text capture.
 - Synthetic/demo data only in this repository.

@@ -31,7 +31,7 @@ async function fixture(name, pageUrl) {
   return document;
 }
 
-test("extracts prompts and source URLs for each supported LLM", async () => {
+test("extracts prompts, visible responses, and source URLs for each supported LLM", async () => {
   const examples = [
     ["chatgpt", "https://chatgpt.com/c/demo", "Compare research methods"],
     ["claude", "https://claude.ai/chat/demo", "Summarize the synthetic evidence"],
@@ -46,19 +46,38 @@ test("extracts prompts and source URLs for each supported LLM", async () => {
     assert.equal(parsed.tool, name);
     assert.equal(parsed.prompts[0].text, prompt);
     assert.equal(parsed.responses.length, 1);
+    assert.match(parsed.responses[0].text, /Visible assistant|Visible \w+ response/);
     assert.equal(parsed.responses[0].source_urls.length >= 1, true);
+    assert.equal(parsed.parser_version, 2);
   }
 });
 
-test("does not include response text, profile text, or attachment fields", async () => {
+test("excludes hidden, profile, and attachment content from response text", async () => {
   const pageUrl = "https://chatgpt.com/c/demo";
   const parsed = parser.parseLlmPage(await fixture("chatgpt", pageUrl), pageUrl);
   const serialized = JSON.stringify(parsed);
 
-  assert.equal(serialized.includes("Response text"), false);
+  assert.equal(serialized.includes("Visible assistant response"), true);
+  assert.equal(serialized.includes("Hidden account text"), false);
   assert.equal(serialized.includes("Synthetic User"), false);
   assert.equal(serialized.includes("private-upload"), false);
-  assert.equal("text" in parsed.responses[0], false);
+});
+
+test("supports fallback selector variants for every LLM", async () => {
+  const examples = [
+    ["chatgpt-alt", "https://chatgpt.com/c/demo"],
+    ["claude-alt", "https://claude.ai/chat/demo"],
+    ["gemini-alt", "https://gemini.google.com/app/demo"],
+    ["perplexity-alt", "https://www.perplexity.ai/search/demo"],
+    ["copilot-alt", "https://copilot.microsoft.com/chats/demo"],
+  ];
+  for (const [name, pageUrl] of examples) {
+    const parsed = parser.parseLlmPage(await fixture(name, pageUrl), pageUrl);
+    assert.equal(parsed.ok, true);
+    assert.match(parsed.responses[0].text, /Fallback/);
+    assert.notEqual(parsed.confidence, "high");
+    assert.equal(parsed.health.degraded_count, 1);
+  }
 });
 
 test("fails safely for malformed and unsupported pages", async () => {

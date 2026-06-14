@@ -19,16 +19,39 @@ test("synthetic fixture produces expected analysis tables", async () => {
     writeOutputs: false,
   });
 
-  assert.equal(result.inputRowCount, 15);
+  assert.equal(result.inputRowCount, 18);
   assert.deepEqual(result.rowCounts, {
-    events_clean: 15,
+    events_clean: 18,
     page_views: 4,
     search_episodes: 1,
     llm_episodes: 1,
     knowledge_exposures: 5,
     downstream_navigation: 2,
     solution_assembly_trace: 15,
+    sensitive_llm_response_text: 1,
+    sensitive_search_snippets: 1,
+    sensitive_search_full_urls: 1,
   });
+  assert.equal(
+    result.tables.sensitive_llm_response_text.rows[0].response_text,
+    "Use a bounded event queue and validate every payload before upload.",
+  );
+  assert.equal(
+    result.tables.sensitive_search_snippets.rows[0].snippet_text,
+    "Service workers handle background extension events.",
+  );
+  assert.equal(
+    result.tables.sensitive_search_full_urls.rows[0].destination_url,
+    "https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime",
+  );
+  for (const [name, table] of Object.entries(result.tables)) {
+    if (name.startsWith("sensitive_")) {
+      continue;
+    }
+    const serialized = JSON.stringify(table.rows);
+    assert.doesNotMatch(serialized, /bounded event queue/);
+    assert.doesNotMatch(serialized, /https:\/\/developer\.mozilla\.org\/en-US/);
+  }
   assert.deepEqual(
     result.tables.downstream_navigation.rows.map((row) => row.source_type),
     ["search", "llm"],
@@ -119,7 +142,7 @@ test("quality checks reject duplicates and unsupported schema versions", async (
     /Duplicate event_id/,
   );
   const unsupported = structuredClone(records[0]);
-  unsupported.event.schema_version = 2;
+  unsupported.event.schema_version = 3;
   assert.throws(
     () => validateRecords([unsupported]),
     /Unsupported schema version/,
@@ -174,6 +197,19 @@ test("private skip records cannot leak URLs or titles", async () => {
     () => validateRecords([skipped]),
     /Invalid event/,
   );
+});
+
+test("expanded full URLs fail closed for private destinations", async () => {
+  const records = await readInput(fixture);
+  const fullUrl = structuredClone(
+    records.find(
+      (record) =>
+        record.event.event_type === "search_result_full_url_observed",
+    ),
+  );
+  fullUrl.event.payload.destination_hostname = "mail.google.com";
+  fullUrl.event.payload.destination_url = "https://mail.google.com/mail/u/0/";
+  assert.throws(() => validateRecords([fullUrl]), /Invalid event/);
 });
 
 test("CSV output neutralizes spreadsheet formulas", () => {

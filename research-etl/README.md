@@ -1,7 +1,7 @@
 # Research ETL
 
 The dependency-free Node ETL reads synthetic JSONL or backend SQLite events and
-writes deterministic CSV tables. It validates schema version 1, duplicate IDs,
+writes deterministic CSV tables. It validates schema versions 1 and 2, duplicate IDs,
 timestamps, denied/private leakage, and secret-like output values before write.
 
 Session rules:
@@ -11,6 +11,12 @@ Session rules:
 - link search results/clicks and LLM sources to matching navigation URL hashes
   in the same activity session within 30 minutes; and
 - classify sources as search, LLM, Q&A, docs, code, encyclopedia, or other.
+
+Study-expanded fields are isolated in:
+
+- `sensitive_llm_response_text.csv`
+- `sensitive_search_snippets.csv`
+- `sensitive_search_full_urls.csv`
 
 Run the reviewed synthetic fixture:
 

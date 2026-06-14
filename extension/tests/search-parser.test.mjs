@@ -32,7 +32,7 @@ async function fixture(name, pageUrl) {
   return document;
 }
 
-test("extracts Google query and organic results without snippets or ads", async () => {
+test("extracts Google query, snippets, URLs, and organic result metadata", async () => {
   const pageUrl = "https://www.google.com/search?q=knowledge+work";
   const document = await fixture("google", pageUrl);
   const result = parser.parseSearchPage(document, pageUrl);
@@ -44,18 +44,23 @@ test("extracts Google query and organic results without snippets or ads", async 
       {
         rank: 1,
         title: "Alpha research source",
-        url: "https://example.org/alpha?tracking=1",
+        url: "https://developer.mozilla.org/en-US/docs/Web/API/URL?utm_source=test&lang=en",
         result_type: "organic",
+        snippet: "Visible Google snippet for person@example.test.",
+        selector_family: "fallback",
+        confidence: "medium",
       },
       {
         rank: 2,
         title: "Documentation guide",
-        url: "https://docs.example.net/guide",
+        url: "https://docs.python.org/3/library/urllib.parse.html",
         result_type: "organic",
+        snippet: null,
+        selector_family: "canonical",
+        confidence: "low",
       },
     ],
   );
-  assert.equal(JSON.stringify(result).includes("Snippet"), false);
   assert.equal(JSON.stringify(result).includes("profile"), false);
 });
 
@@ -81,10 +86,25 @@ test("extracts Bing and DuckDuckGo fixture results", async () => {
     assert.equal(result.ok, true);
     assert.equal(result.results.length, 2);
     assert.equal(result.results[0].title, firstTitle);
+    assert.match(result.results[0].snippet, /Visible/);
     assert.equal(
       result.results.some((item) => item.title === "Synthetic ad"),
       false,
     );
+  }
+});
+
+test("supports fallback selector variants for every search engine", async () => {
+  for (const [name, pageUrl] of [
+    ["google-alt", "https://www.google.com/search?q=research"],
+    ["bing-alt", "https://www.bing.com/search?q=research"],
+    ["duckduckgo-alt", "https://duckduckgo.com/?q=research"],
+  ]) {
+    const result = parser.parseSearchPage(await fixture(name, pageUrl), pageUrl);
+    assert.equal(result.ok, true);
+    assert.equal(result.results.length, 1);
+    assert.match(result.results[0].snippet, /Fallback/);
+    assert.equal(result.health.degraded_count, 1);
   }
 });
 
@@ -127,7 +147,7 @@ test("infers click rank only for recognized organic result anchors", async () =>
     {
       engine: "duckduckgo",
       rank: 1,
-      url: "https://example.com/knowledge",
+      url: "https://en.wikipedia.org/wiki/Knowledge_worker?utm_medium=test",
     },
   );
 });
