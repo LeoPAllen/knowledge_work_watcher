@@ -18,6 +18,7 @@
 
 - [ ] Relevant automated checks pass.
 - [ ] Parsers/privacy filters have positive and negative tests when changed.
+- [ ] CI/package and repository-policy checks pass when applicable.
 - [ ] `git diff --check` passes.
 
 ## Documentation

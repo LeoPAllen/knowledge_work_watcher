@@ -6,10 +6,17 @@
   },
   "scripts": {
     "backend:start": "node backend/src/server.mjs",
+    "check": "npm run check:manifest && npm run check:repository",
     "check:manifest": "node extension/scripts/check-manifest.mjs",
+    "check:repository": "node scripts/check-repository-policy.mjs",
     "etl": "node research-etl/src/cli.mjs",
     "etl:synthetic": "node research-etl/src/cli.mjs --input research-etl/fixtures/synthetic-events.jsonl --output research-exports/synthetic",
-    "test": "node --test extension/tests/*.test.mjs backend/tests/*.test.mjs research-etl/tests/*.test.mjs"
+    "package:extension": "node extension/scripts/package-extension.mjs",
+    "test": "npm run test:extension && npm run test:backend && npm run test:etl && npm run test:workflow",
+    "test:backend": "node --test backend/tests/*.test.mjs",
+    "test:etl": "node --test research-etl/tests/*.test.mjs",
+    "test:extension": "node --test extension/tests/*.test.mjs",
+    "test:workflow": "node --test scripts/tests/*.test.mjs"
   },
   "devDependencies": {
     "linkedom": "^0.18.12"

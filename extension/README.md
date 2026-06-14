@@ -63,7 +63,11 @@ explicit server rejections create metadata-only local records.
 From the repository root:
 
 ```sh
-npm install
+npm ci
 npm run check:manifest
 npm test
+npm run package:extension
 ```
+
+The package command writes a review-only ZIP under ignored `dist/`. It contains
+only `manifest.json` and runtime `src/` files; it is not a store release.
