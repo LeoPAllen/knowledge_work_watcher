@@ -12,7 +12,7 @@ allowlist-first domain policy.
 This repository contains a Chrome Manifest V3 extension, a local MVP ingestion
 API, and project documentation. The extension records minimized navigation,
 search, LLM, and knowledge-site events locally after consent. The Fastify API
-validates schema version 1 events and appends them to SQLite. Extension upload,
+validates schema version 1 events and appends them to SQLite. Extension upload
 is optional, consent-gated, and active-capture-only. Local research ETL converts
 synthetic JSONL or SQLite events into sessionized CSV tables. LLM response-text
 capture and broad page capture remain absent. Only synthetic or demo data may
@@ -51,9 +51,29 @@ decision. Real participant data must never be committed.
 
 ## Development
 
-See [extension/README.md](extension/README.md) for unpacked-loading and test
-instructions and [backend/README.md](backend/README.md) for API setup. Run
-`npm test` for all tests and `npm run backend:start` for the configured API.
-Run `npm run etl:synthetic` for reviewed synthetic research exports; see
-[research-etl/README.md](research-etl/README.md) for input and session rules.
-See [AGENTS.md](AGENTS.md) for repository rules.
+Requires Node.js 24 and the standard `zip`/`unzip` commands.
+
+```sh
+npm ci                    # install locked dependencies
+npm test                  # extension, backend, ETL, and workflow tests
+npm run check             # manifest, permissions, secrets, and data paths
+npm run backend:start     # run the configured local ingestion API
+npm run etl:synthetic     # generate synthetic inputs and CSV exports
+npm run package:extension # create dist/knowledge-work-watcher-0.1.0.zip
+```
+
+For the backend, copy `.env.example` to ignored `.env`, load its variables, and
+use a synthetic token. Load `extension/` unpacked from `chrome://extensions`.
+To test local upload, enable local debug mode, create a synthetic event, set the
+loopback server URL/token, grant its runtime permission, and select **Sync now**.
+
+```sh
+cp .env.example .env
+set -a; source .env; set +a
+npm run backend:start
+```
+
+See [extension/README.md](extension/README.md) for unpacked/manual checks,
+[backend/README.md](backend/README.md) for API setup, and
+[research-etl/README.md](research-etl/README.md) for ETL rules. CI runs on pull
+requests and `main`; review ZIPs are CI artifacts only and are not published.

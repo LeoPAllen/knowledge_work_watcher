@@ -21,6 +21,8 @@ consent-gated. Local ETL produces sessionized synthetic CSV exports.
 - `docs/adr/`: architectural decisions
 - `backend/`: authenticated ingestion API, SQLite storage, and tests
 - `research-etl/`: synthetic fixtures, sessionization, CSV exports, and tests
+- `scripts/`: repository policy and developer workflow checks
+- `.github/workflows/`: pull-request and main-branch CI
 
 ## Coding Rules
 

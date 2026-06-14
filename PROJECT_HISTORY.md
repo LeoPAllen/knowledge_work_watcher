@@ -1,5 +1,15 @@
 # Project History
 
+## 2026-06-14 - CI, packaging, and developer workflow
+
+- Added PR/main CI for extension, backend, ETL, workflow, and policy checks.
+- Added a review-only extension ZIP command and archive-content validation.
+- Added tracked real-data path and high-confidence secret checks.
+- Updated package scripts, README commands, PR checks, and local env guidance.
+- Checks: tests, manifest/policy, package inspection, audit, and diff check.
+- No dependencies, permissions, telemetry, or release automation were added.
+- Next: validate the packaged extension manually in Chrome before a study build.
+
 ## 2026-06-14 - Privacy and security hardening
 
 - Restricted parser messages to scoped tab senders and UI actions to extension pages.
