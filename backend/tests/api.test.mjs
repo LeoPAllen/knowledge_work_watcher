@@ -103,6 +103,49 @@ test("rejects malformed events without storage", async (t) => {
   );
 });
 
+test("rejects schema-shaped events containing unredacted sensitive text", async (t) => {
+  const storage = new EventStorage(":memory:");
+  const app = buildApp({ config: config(), storage });
+  t.after(() => app.close());
+  const unsafe = createEvent({
+    eventType: "search_query_observed",
+    extensionVersion: "0.1.0",
+    captureMode: "ambient",
+    source: "search_parser",
+    participantIdHash: "a".repeat(64),
+    sessionId: "session-1",
+    payload: {
+      page_url_hash: "b".repeat(64),
+      search_hostname: "www.google.com",
+      tab_id: `tab_${"c".repeat(64)}`,
+      window_id: `window_${"d".repeat(64)}`,
+      browser_timestamp: 1,
+      search_engine: "google",
+      query: "synthetic query",
+      query_redacted: false,
+      redaction_reason: null,
+    },
+    eventId: "unsafe-text-event",
+    createdAt: "2026-06-13T11:59:00.000Z",
+  });
+  unsafe.payload.query = "person@example.test";
+
+  const response = await app.inject({
+    method: "POST",
+    url: "/v1/events",
+    headers: authorization(),
+    payload: unsafe,
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.json().error, "invalid_event");
+  assert.equal(
+    storage.database.prepare("SELECT COUNT(*) AS count FROM raw_events").get()
+      .count,
+    0,
+  );
+});
+
 test("rejects malformed JSON with a safe client error", async (t) => {
   const app = buildApp({ config: config() });
   t.after(() => app.close());

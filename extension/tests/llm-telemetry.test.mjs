@@ -111,6 +111,8 @@ test("rejects mismatched tools, hosts, and missing tab context", async () => {
   const invalid = [
     [{ ...parsed, tool: "claude" }, sender],
     [parsed, { ...sender, url: "https://evil.example/c/demo" }],
+    [parsed, { ...sender, url: "https://chatgpt.com/account" }],
+    [parsed, { ...sender, url: "https://claude.ai/login" }],
     [parsed, { ...sender, tab: undefined }],
   ];
   for (const [message, invalidSender] of invalid) {

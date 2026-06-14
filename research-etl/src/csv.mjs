@@ -2,10 +2,13 @@ function escapeCell(value) {
   if (value === null || value === undefined) {
     return "";
   }
-  const text =
+  let text =
     typeof value === "boolean" || typeof value === "number"
       ? String(value)
       : value;
+  if (typeof value === "string" && /^[\t\r\n ]*[=+\-@]/.test(text)) {
+    text = `'${text}`;
+  }
   if (/[",\r\n]/.test(text)) {
     return `"${text.replaceAll('"', '""')}"`;
   }

@@ -1,3 +1,5 @@
+import { redactText } from "./query-redaction.mjs";
+
 export const SCHEMA_VERSION = 1;
 
 export const EVENT_TYPES = Object.freeze([
@@ -69,6 +71,14 @@ function isNonEmptyString(value) {
 
 function isNullableString(value) {
   return value === null || isNonEmptyString(value);
+}
+
+function isSafeText(value) {
+  return typeof value === "string" && !redactText(value).redacted;
+}
+
+function isNullableSafeText(value) {
+  return value === null || (isNonEmptyString(value) && isSafeText(value));
 }
 
 function isNullableParticipantHash(value) {
@@ -237,6 +247,7 @@ function validateSearchResult(result) {
     result.rank > 0 &&
     isNonEmptyString(result.title) &&
     result.title.length <= 300 &&
+    isSafeText(result.title) &&
     isHostname(result.destination_hostname) &&
     isSha256(result.destination_url_hash) &&
     RESULT_TYPES.has(result.result_type)
@@ -256,7 +267,9 @@ function validateLlmContext(payload, extraFields = new Set()) {
     isFiniteTimestamp(payload.browser_timestamp) &&
     LLM_TOOLS.has(payload.llm_tool) &&
     (payload.model_name === null ||
-      (isNonEmptyString(payload.model_name) && payload.model_name.length <= 100))
+      (isNonEmptyString(payload.model_name) &&
+        payload.model_name.length <= 100 &&
+        isSafeText(payload.model_name)))
   );
 }
 
@@ -286,7 +299,9 @@ function validateKnowledgeContext(payload, extraFields = new Set()) {
     KNOWLEDGE_CATEGORIES.has(payload.category) &&
     KNOWLEDGE_PAGE_TYPES.has(payload.page_type) &&
     (payload.title === null ||
-      (isNonEmptyString(payload.title) && payload.title.length <= 300)) &&
+      (isNonEmptyString(payload.title) &&
+        payload.title.length <= 300 &&
+        isSafeText(payload.title))) &&
     REFERRER_CATEGORIES.has(payload.referrer_category) &&
     payload.parser_version === 1
   );
@@ -457,7 +472,9 @@ function validatePayload(eventType, payload) {
           ]),
         ) &&
         (payload.query === null ||
-          (isNonEmptyString(payload.query) && payload.query.length <= 500)) &&
+          (isNonEmptyString(payload.query) &&
+            payload.query.length <= 500 &&
+            isSafeText(payload.query))) &&
         typeof payload.query_redacted === "boolean" &&
         (payload.redaction_reason === null ||
           REDACTION_REASONS.has(payload.redaction_reason)) &&
@@ -509,7 +526,8 @@ function validatePayload(eventType, payload) {
         payload.prompt_index > 0 &&
         (payload.prompt_text === null ||
           (isNonEmptyString(payload.prompt_text) &&
-            payload.prompt_text.length <= 500)) &&
+            payload.prompt_text.length <= 500 &&
+            isSafeText(payload.prompt_text))) &&
         typeof payload.prompt_redacted === "boolean" &&
         (payload.prompt_redacted
           ? payload.prompt_text === null &&
@@ -579,7 +597,8 @@ function validatePayload(eventType, payload) {
         Array.isArray(payload.tags) &&
         payload.tags.length <= 10 &&
         payload.tags.every(
-          (tag) => isNonEmptyString(tag) && tag.length <= 50,
+          (tag) =>
+            isNonEmptyString(tag) && tag.length <= 50 && isSafeText(tag),
         ) &&
         isNullableInteger(payload.score)
       );
@@ -621,7 +640,8 @@ function validatePayload(eventType, payload) {
         /^[A-Za-z0-9_.-]+$/.test(payload.repository) &&
         (payload.file_path === null ||
           (isNonEmptyString(payload.file_path) &&
-            payload.file_path.length <= 500)) &&
+            payload.file_path.length <= 500 &&
+            isSafeText(payload.file_path))) &&
         isNullableInteger(payload.issue_number) &&
         isNullableInteger(payload.pull_request_number) &&
         payload.visibility === "public"
@@ -638,11 +658,13 @@ function validatePayload(eventType, payload) {
         Array.isArray(payload.headings) &&
         payload.headings.length <= 20 &&
         payload.headings.every(
-          (heading) => isNonEmptyString(heading) && heading.length <= 200,
+          (heading) =>
+            isNonEmptyString(heading) &&
+            heading.length <= 200 &&
+            isSafeText(heading),
         ) &&
-        (payload.package_name === null ||
-          (isNonEmptyString(payload.package_name) &&
-            payload.package_name.length <= 214))
+        isNullableSafeText(payload.package_name) &&
+        (payload.package_name === null || payload.package_name.length <= 214)
       );
     case "parser_error":
       return validateParserError(payload);

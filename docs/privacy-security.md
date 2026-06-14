@@ -8,19 +8,19 @@
 - Events are minimized before entering a local queue.
 - The local queue is bounded at 500 validated events.
 - Upload is off by default and requires active consent/capture.
-- Navigation capture requires active consent, ambient mode, and an allowed URL.
+- Navigation and parser capture require active consent and an allowed URL.
 
 ## Prohibited Capture
 - Passwords, form fields, cookies, authentication tokens, or clipboard data
 - Private, intranet, localhost, file, or unapproved domains
 - Real participant data in source control, fixtures, logs, or examples
 
-Only search query/title and named LLM prompt text are permitted on reviewed
-domains. LLM response text and all other page text remain prohibited.
+Only reviewed search/title and LLM prompt text is permitted; all other page text remains prohibited.
 
 ## Security Expectations
 - Request the narrowest Chrome permissions and host patterns possible.
-- Validate event shape and domain eligibility at collection and persistence.
+- Validate sender, event shape, redaction, and domain at each trust boundary;
+  inactive or disallowed parser pages attach no DOM observers or listeners.
 - Require bearer authentication and bounded request bodies for ingestion.
 - Keep tokens in environment variables and event bodies out of default logs.
 - Extension tokens are write-only in UI and stored locally without encryption.
@@ -32,7 +32,7 @@ domains. LLM response text and all other page text remain prohibited.
 - Participant IDs are hashed in the options page before storage or messaging.
 - Accepted backend events are append-only in local, unencrypted SQLite.
 - Server rows add receive time and request ID; no event query API exists.
-- Failed uploads preserve events; rejection records never contain payloads.
+- CSV exports neutralize formulas; rejection records never contain payloads.
 
 ## URL Policy
 - Every observed navigation URL must pass the shared privacy filter.

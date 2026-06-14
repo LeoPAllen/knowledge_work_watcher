@@ -28,7 +28,9 @@ function validatedPage(senderUrl, tool) {
   try {
     const url = new URL(senderUrl);
     return (
-      url.protocol === "https:" && LLM_HOSTS[tool]?.includes(url.hostname)
+      url.protocol === "https:" &&
+      LLM_HOSTS[tool]?.includes(url.hostname) &&
+      classifyUrl(url.href).classification === "allowed"
         ? url
         : null
     );
