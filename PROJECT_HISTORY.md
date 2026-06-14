@@ -1,5 +1,15 @@
 # Project History
 
+## 2026-06-14 - MVP end-to-end verification
+
+- Added a synthetic loopback E2E path through queue, upload, API, and SQLite.
+- Runs ETL over ingested events and reports event/table row counts and paths.
+- Verifies minimized denied/private skip storage and zero rejected events.
+- Packages the extension and records ignored local verification artifacts.
+- Added the E2E command to CI without dependencies or capture-scope changes.
+- Checks: full tests, policy, E2E, package, audit, and diff inspection.
+- Next: manually validate unpacked Chrome controls and live site selectors.
+
 ## 2026-06-14 - CI, packaging, and developer workflow
 
 - Added PR/main CI for extension, backend, ETL, workflow, and policy checks.
