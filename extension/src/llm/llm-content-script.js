@@ -56,6 +56,10 @@
     if (!tool) {
       return;
     }
+    const gate = await send({ type: "get_capture_gate" });
+    if (!gate?.ok || !gate.active) {
+      return;
+    }
     await capture();
     const root = parser.conversationRoot(document, tool);
     if (root) {

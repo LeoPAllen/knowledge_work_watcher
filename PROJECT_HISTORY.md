@@ -1,5 +1,16 @@
 # Project History
 
+## 2026-06-14 - Privacy and security hardening
+
+- Restricted parser messages to scoped tab senders and UI actions to extension pages.
+- Blocked sensitive LLM paths through the shared privacy filter.
+- Prevented inactive content scripts from attaching DOM observers or listeners.
+- Enforced text redaction invariants in the shared schema and backend ingestion.
+- Required persisted debug mode before synthetic event creation.
+- Neutralized spreadsheet formulas in research CSV exports.
+- Added focused extension, backend, and ETL regression tests.
+- Next: complete the deferred deployment security review.
+
 ## 2026-06-13 - Research ETL exports
 
 - Added dependency-free JSONL and SQLite input for schema version 1 events.

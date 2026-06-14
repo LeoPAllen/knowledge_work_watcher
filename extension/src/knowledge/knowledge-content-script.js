@@ -56,11 +56,19 @@
     debounceTimer = setTimeout(() => void capture().catch(() => {}), 500);
   }
 
-  void capture().catch(() => {});
-  if (document.body) {
-    new MutationObserver(scheduleCapture).observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
+  async function initialize() {
+    const gate = await chrome.runtime.sendMessage({ type: "get_capture_gate" });
+    if (!gate?.ok || !gate.active) {
+      return;
+    }
+    await capture();
+    if (document.body) {
+      new MutationObserver(scheduleCapture).observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    }
   }
+
+  void initialize().catch(() => {});
 })();

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 import { EventStorage } from "../../backend/src/storage.mjs";
+import { rowsToCsv } from "../src/csv.mjs";
 import { readInput } from "../src/input.mjs";
 import { runEtl } from "../src/index.mjs";
 import { assertSafeOutputs, validateRecords } from "../src/quality.mjs";
@@ -125,7 +126,7 @@ test("quality checks reject duplicates and unsupported schema versions", async (
   );
 });
 
-test("invalid timestamps and secret-like output values are rejected", async () => {
+test("invalid timestamps and secret-like values are rejected", async () => {
   const records = await readInput(fixture);
   const invalidTime = structuredClone(records[0]);
   invalidTime.event.created_at = "not-a-timestamp";
@@ -134,9 +135,17 @@ test("invalid timestamps and secret-like output values are rejected", async () =
   const secret = structuredClone(records[0]);
   secret.event.event_id = "secret-output-check";
   secret.event.payload.query = "api_key=synthetic-value";
-  validateRecords([secret]);
   assert.throws(
-    () => assertSafeOutputs(transformRecords(sessionize([secret]))),
+    () => validateRecords([secret]),
+    /Invalid event/,
+  );
+  assert.throws(
+    () =>
+      assertSafeOutputs({
+        synthetic: {
+          rows: [{ text_value: "api_key=synthetic-value" }],
+        },
+      }),
     /Secret-like value/,
   );
 });
@@ -165,4 +174,23 @@ test("private skip records cannot leak URLs or titles", async () => {
     () => validateRecords([skipped]),
     /Invalid event/,
   );
+});
+
+test("CSV output neutralizes spreadsheet formulas", () => {
+  const csv = rowsToCsv(
+    [
+      { value: "=HYPERLINK(\"https://example.test\")" },
+      { value: "  +SUM(1,2)" },
+      { value: "@synthetic" },
+      { value: "ordinary text" },
+      { value: -5 },
+    ],
+    ["value"],
+  );
+
+  assert.match(csv, /"'=HYPERLINK/);
+  assert.match(csv, /"'  \+SUM/);
+  assert.match(csv, /'@synthetic/);
+  assert.match(csv, /ordinary text/);
+  assert.match(csv, /\n-5\n/);
 });

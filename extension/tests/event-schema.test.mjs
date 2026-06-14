@@ -432,3 +432,90 @@ test("rejects unexpected fields and invalid payloads", () => {
     /Invalid event/,
   );
 });
+
+test("rejects sensitive text that is falsely marked safe", () => {
+  const searchContext = {
+    page_url_hash: "a".repeat(64),
+    search_hostname: "www.google.com",
+    tab_id: `tab_${"b".repeat(64)}`,
+    window_id: `window_${"c".repeat(64)}`,
+    browser_timestamp: 1,
+    search_engine: "google",
+  };
+  assert.throws(
+    () =>
+      createEvent({
+        ...baseInput,
+        eventType: "search_query_observed",
+        payload: {
+          ...searchContext,
+          query: "person@example.test",
+          query_redacted: false,
+          redaction_reason: null,
+        },
+      }),
+    /Invalid event/,
+  );
+  assert.throws(
+    () =>
+      createEvent({
+        ...baseInput,
+        eventType: "search_results_exposed",
+        payload: {
+          ...searchContext,
+          results: [
+            {
+              rank: 1,
+              title: "api_key=synthetic-secret-value",
+              destination_hostname: "example.test",
+              destination_url_hash: "d".repeat(64),
+              result_type: "organic",
+            },
+          ],
+        },
+      }),
+    /Invalid event/,
+  );
+
+  const llmContext = {
+    page_url_hash: "a".repeat(64),
+    llm_hostname: "chatgpt.com",
+    tab_id: `tab_${"b".repeat(64)}`,
+    window_id: `window_${"c".repeat(64)}`,
+    conversation_id: `conversation_${"d".repeat(64)}`,
+    browser_timestamp: 1,
+    llm_tool: "chatgpt",
+    model_name: "Synthetic model",
+  };
+  assert.throws(
+    () =>
+      createEvent({
+        ...baseInput,
+        eventType: "llm_prompt_observed",
+        payload: {
+          ...llmContext,
+          prompt_index: 1,
+          prompt_text: "call +1 (202) 555-0100",
+          prompt_redacted: false,
+          redaction_reason: null,
+        },
+      }),
+    /Invalid event/,
+  );
+  assert.throws(
+    () =>
+      createEvent({
+        ...baseInput,
+        eventType: "llm_interaction_metadata",
+        payload: {
+          ...llmContext,
+          model_name: "person@example.test",
+          prompt_count: 1,
+          response_count: 1,
+          source_count: 0,
+          parser_version: 1,
+        },
+      }),
+    /Invalid event/,
+  );
+});

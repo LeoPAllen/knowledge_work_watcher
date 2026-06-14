@@ -15,6 +15,11 @@ import {
   createUploadSync,
   UPLOAD_ALARM_NAME,
 } from "./upload-sync.mjs";
+import {
+  canCreateTestEvent,
+  extensionPageSource,
+  isAuthorizedParserMessage,
+} from "./message-policy.mjs";
 
 const rawQueue = createLocalQueue(createChromeStorageAdapter(), {
   deadLetterStorage: createChromeDeadLetterStorage(),
@@ -153,13 +158,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   };
   const parserAction = parserActions[message?.type];
   if (parserAction) {
+    if (!isAuthorizedParserMessage(message.type, sender)) {
+      sendResponse({ ok: false });
+      return false;
+    }
     parserAction()
       .then((result) => sendResponse({ ok: true, ...result }))
       .catch(() => sendResponse({ ok: false }));
     return true;
   }
 
-  const source = sender.url?.includes("/popup/") ? "popup" : "options";
+  const source = extensionPageSource(
+    sender,
+    chrome.runtime.getURL(""),
+  );
+  if (!source) {
+    sendResponse({ ok: false });
+    return false;
+  }
   const actions = {
     get_state: async () => ({ state: await controller.getState() }),
     get_dashboard: async () => ({
@@ -209,6 +225,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     },
     create_test_event: async () => {
       const state = await controller.getState();
+      if (!canCreateTestEvent(state)) {
+        throw new Error("debug mode is required");
+      }
       const event = createEvent({
         eventType: "queue_test_event",
         extensionVersion,
