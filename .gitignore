@@ -26,6 +26,13 @@ tmp/
 data/
 participant-data/
 research-exports/
+backups/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-wal
+*.db-shm
 
 # Local backend storage
 backend/data/

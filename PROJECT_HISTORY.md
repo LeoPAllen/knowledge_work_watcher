@@ -1,5 +1,16 @@
 # Project History
 
+## 2026-06-14 - Controlled-pilot readiness
+
+- Added concise deployment, readiness, participant, parser, and withdrawal docs.
+- Added summary-only SQLite inspection and stopped-server backup tooling.
+- Added hash-only participant deletion with dry-run default and focused tests.
+- Recorded user-reported manual validation without claiming certification.
+- No telemetry, schema, permission, dependency, or capture behavior changed.
+- Checks: npm ci, 150 tests, policy, E2E, package, and operator CLI checks.
+- Unresolved: approved IRB language, retention terms, and production auth.
+- Next: assign owners, rehearse restore/withdrawal, and make a pilot go/no-go.
+
 ## 2026-06-14 - Study-build expanded capture
 
 - Added always-on response text, snippet, and full-result-URL study events.
