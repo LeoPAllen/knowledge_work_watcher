@@ -21,7 +21,9 @@ consent-gated. Local ETL produces sessionized synthetic CSV exports.
 - `docs/adr/`: architectural decisions
 - `backend/`: authenticated ingestion API, SQLite storage, and tests
 - `research-etl/`: synthetic fixtures, sessionization, CSV exports, and tests
-- `scripts/`: repository policy and developer workflow checks
+- `DEPLOYMENT.md`: controlled-pilot deployment and operational commands
+- `docs/*operations*`, `docs/*readiness*`: pilot and participant procedures
+- `scripts/`: repository policy, workflow checks, and safe SQLite operations
 - `.github/workflows/`: pull-request and main-branch CI
 
 ## Coding Rules
@@ -33,6 +35,7 @@ consent-gated. Local ETL produces sessionized synthetic CSV exports.
 - Keep ingestion append-only and avoid logging event bodies or auth tokens.
 - Keep upload off by default and preserve events until server acknowledgement.
 - Keep ETL deterministic and fail closed on schema or privacy quality checks.
+- Keep operational database tools summary-only and destructive actions dry-run.
 - Add focused tests for parsers, redaction, and privacy filters.
 - Use synthetic fixtures only.
 

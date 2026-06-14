@@ -32,3 +32,6 @@ npm run etl -- --input path/to/events.sqlite --output research-exports/run
 
 Generated exports belong under ignored `research-exports/`. Never use or commit
 real participant data in this repository.
+
+Withdrawal requires deleting or regenerating affected exports; see
+[data-retention-withdrawal.md](../docs/data-retention-withdrawal.md).

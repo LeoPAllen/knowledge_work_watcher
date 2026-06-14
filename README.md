@@ -45,6 +45,11 @@ study consent flow. Real participant data must never be committed.
 
 ## Documentation
 
+- [Controlled-pilot deployment](DEPLOYMENT.md)
+- [Pilot readiness](docs/pilot-readiness.md)
+- [Participant operations](docs/participant-operations.md)
+- [Live parser validation](docs/live-parser-validation.md)
+- [Retention and withdrawal](docs/data-retention-withdrawal.md)
 - [Architecture](docs/architecture.md)
 - [Privacy and security](docs/privacy-security.md)
 - [Data inventory](docs/data-inventory.md)
@@ -67,6 +72,14 @@ npm run etl:synthetic     # generate synthetic inputs and CSV exports
 npm run package:extension # create dist/knowledge-work-watcher-0.1.0.zip
 ```
 
+Operational SQLite tools are summary-only or safe-by-default:
+
+```sh
+npm run inspect:events -- --input path/to/events.sqlite
+npm run backup:sqlite -- --input path/to/events.sqlite --output-dir path/to/backups
+npm run delete:participant -- --input path/to/events.sqlite --participant-hash <sha256>
+```
+
 The E2E command uses only reviewed synthetic events and loopback networking. It
 writes ignored verification artifacts under `backend/data/`,
 `research-exports/e2e/`, and `dist/`.
@@ -86,3 +99,5 @@ See [extension/README.md](extension/README.md) for unpacked/manual checks,
 [backend/README.md](backend/README.md) for API setup, and
 [research-etl/README.md](research-etl/README.md) for ETL rules. CI runs on pull
 requests and `main`; review ZIPs are CI artifacts only and are not published.
+See [DEPLOYMENT.md](DEPLOYMENT.md) before any controlled pilot. The current
+shared wave token is not independently revocable per participant.
